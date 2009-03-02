@@ -1,0 +1,20 @@
+# Main configuration file for rot[t]log
+# These values can all be overriden in monthly, weekly, daily files
+
+packer=gzip                  
+compress="-9c"
+unpacker=gunzip
+uncompress="-c"
+extension="gz"
+pager="less"
+packdir="/var/log"
+fromuser="root@localhost"
+touser="root@localhost"
+notifempty=1
+mail="/usr/sbin/sendmail -t"
+maxdepth=0
+dir_own=root
+dir_grp=root
+dir_perm=0700
+remove_missing
+

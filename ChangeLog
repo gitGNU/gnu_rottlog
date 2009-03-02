@@ -1,0 +1,781 @@
+2009.03.02 <sinuhe@gnu.org>
+
+* Begin cleaning cruft out of rottlog.
+* Update README.
+
+2008.12.06 <sinuhe@gnu.org>
+
+* Correct several spelling errors.
+* Simplify default configuration to rotate only /var/log/messages,
+  and not compress the log.
+* Remove non-existent links in manual.
+
+2008.12.05 <sinuhe@gnu.org>
+
+* Up VERSION to 0.71.1.
+
+2008.11.28 <sinuhe@gnu.org>
+
+* /var/log not /var/backup for rc configuration file.
+* Modify texinfo doc with grammatical corrections.
+
+2008.11.19 <sinuhe@gnu.org>
+
+* Up VERSION to 0.71.
+* Change makedist.sh in preparation for ftp upload.
+* Remove non-existant file from FILES.
+* Release 0.71.
+
+2008.11.04 <sinuhe@gnu.org>
+
+* Upgrade to FDL1.3
+
+2008.10.31 <sinuhe@gnu.org>
+
+* Use /var/lib, not /var/run, for stat files.
+* Upgrade to license to GPLv3.
+
+2008.10.30 <sinuhe@gnu.org>
+
+* Upgrade to GPLv3.
+
+2008.10.29 <sinuhe@gnu.org>
+
+* Change to Arch from CVS.
+* Fix /var/run bug (#24367 in Savannah).
+* Change default prefix to /usr/local from /usr.
+
+2008.10.23 <sinuhe@gnu.org>
+
+* Note cruft clean up (minor) in rottlog.
+* Make TEMPDIR be /tmp by default.
+
+2008.10.08 <sinuhe@gnu.org>
+
+* Minor edits and bug fix in doc build.
+
+2008.10.02 <sinuhe@gnu.org>
+
+* Move man and texinfo directory to new doc directory.
+* Scrap Appunti and existing TODO.
+
+2008.09.26 <sinuhe@gnu.org>
+
+* Update FSF GPL address on all files.
+* Update depcomp, mdate-sh, missing, and texinfo.tex.
+
+2008.09.22 <sinuhe@gnu.org>
+
+* Fix version number in NEWS (0.71).
+* Minor grammatical changes in README.Log2Rot.
+
+2008.09.15 <sinuhe@gnu.org>
+
+* Update NEWS with ChangeLog entries.
+	
+2008.09.10 <sinuhe@gnu.org>
+
+* Readd NEWS (not yet written)
+* Add a rc and weekly default file and remove samples.
+* Update info manual with sample examples.
+
+2008.09.06 <sinuhe@gnu.org>
+
+* Remove rottlogconf.5 man page.  Merge rottlogconf info manual with
+  rottlog info manual.
+* Remove rottlogex.5 man page.  Merge examples into rottlog info manual.
+* Create a simple rottlog.8 man page.
+
+2008.09.04 <sinuhe@gnu.org>
+
+* Remove rottlogrc.5 man page.  Merge rottlogrc info manual with rottlog
+  info manual.
+
+2008.08.07 <sinuhe@gnu.org>
+
+* Remove rottlog.8 man page.  The purpose here is to migrate to 
+  the GNU info format.
+
+2008.08.01 <sinuhe@gnu.org>
+
+* Clean up rottlog.texi
+* Add date to VERSION stamping for development version.
+
+2008.07.29 <sinuhe@gnu.org>
+
+* Update rottlog to be non-stefano specific.
+* Add portability request to TODO list for BSD/AIX.
+
+2008.07.19 <sinuhe@gnu.org>
+
+* Update ChangeLog to be consistent with GNU style.  Rewrite to improve
+  readability for future updating.  I've done my best to remain true to
+  Stefano's original notes (and timezone; dates follow EST now).
+
+2008.07.17 <sinuhe@gnu.org>
+
+* Revise makedist.sh to be more generic.  NEWS and ChangeLog
+  no longer updated automatically.
+* Update makedist.sh to use new automake, autoconf.
+* Simplify README and AUTHORS
+
+2008.07.14 <sinuhe@gnu.org>
+
+* Add translated Appunti and makedist.sh (Thanks to Andrea Puscetti)
+* Cleanup TODO
+
+2008.07.03 <sinuhe@gnu.org>
+
+* Change VERSION to 0.70-devel.  Will update to 0.70 for release.
+* Cleanup README.Log2Rot, README
+
+2008.07.02 <sinuhe@gnu.org>
+
+* Bug fixes in rottlog.
+
+2005.04.04 <falsetto@gnu.org>
+
+* Sync man and texinfo with rottlog code
+* Release 0.70beta3
+
+2005.03.24 <falsetto@gnu.org>
+
+* Better use of stamp_now global variable
+* Add use of 'start' keyword to Rot[t]Log rotate and archiving method
+
+2005.03.23 <falsetto@gnu.org>
+
+* Bug fix: remove use of 2>&1 in check_last_rotate. 
+* Bug fix: --summary correctly displays information about newly rotated 
+  logs
+* Bug fix: showlog display only one time same file :-)
+* Add 'start' description in man and texinfo pages
+
+2005.03.19 <falsetto@gnu.org>
+
+* Add check for existing lock directory
+* Change date calculation in check_last_rotate (using date_refer)
+* Add use of date_refer in some 'date' command
+* Don't use -1 parameter for 'cal'
+
+2005.03.09 <falsetto@gnu.org>
+
+* Merge new rotate_logrotate function in main rottlog code.
+
+2005.02.28 <falsetto@gnu.org>
+
+* Begin a rotate_logrotate rewrite. Some test required before merging. (added
+  use of 'start' keywork)
+
+2005.02.25 <falsetto@gnu.org>
+
+* Add {year,month,week,day}_based keyword to better control time-related
+  metavar expansion
+* Add start keyword to enhance logrotate compatibility
+* Update rottlogconf man page to add *_based keyword (and grammar correction)
+
+2005.02.24 <falsetto@gnu.org>
+
+* Fix bugs in mail_to_admin (extra spaces between = and variabiles)
+  (Thanks to Antonio Cappellari)
+
+2004.10.30 <falsetto@gnu.org>
+
+* Fix a bug in findlog function: read correct .last* files
+* Remove use of DONTEXIT in command line parsing (Thanks to Antonio Cappellari)
+* Release 0.70beta2
+
+2004.10.23 <falsetto@gnu.org>
+
+* Fix a bug in mail subsystem (Thanks to Antonio Cappellari)
+
+2004.05.19 <falsetto@gnu.org>
+
+* Some cosmetic changes in use of debecho messages
+* Add --debug option to rottlog --help page
+* Update rottlog.8 man page to add --debug option
+* Update rottlog.texi info page to add --debug option
+* Release 0.70beta1
+
+2004.05.19 <falsetto@gnu.org>
+
+* Add new README file
+
+2004.05.12 <falsetto@gnu.org>
+
+* Change my mail address to falsetto@gnu.org in all needed files
+* Update read_rc to perform sanity checks only when reading main rc file
+* Update Log2Rot accordingly
+* Add use of nodelaycompress option in rottlog and Log2Rot
+
+2004.02.17 <stefko5@inwind.it>
+
+* Add parameter handling in Log2Rot
+* Add use of error codes in Log2Rot
+* Release 0.63alpha
+
+2003.12.23 <stefko5@inwind.it>
+
+* Fix a bug in mailopt_zip and nocompress handling 
+* Add use of maillast parameter for (compatibility with logrotate)
+* Update documentation
+* Synced Log2Rot managed keywords with rottlog updates
+* Update README.Log2Rot
+* Change 'Rot[t]Log' to 'GNU Rot[t]Log'
+
+2003.12.04 <stefko5@inwind.it>
+
+* Update documentation
+
+2003.11.28 <stefko5@inwind.it>
+
+* Fix bug in update_stats function
+* Fix bug in lastum function. It was using an incorrect tmp file for maxage
+* New implementation for remove_maxage
+* Fix a bug in is_readable function.
+* Erase unuseful code in tgz target in Makefile.am
+
+2003.11.27 <stefko5@inwind.it>
+
+* Update documentation with dateext and maxage parameters    
+* Update rottlogex texinfo page 
+* Fix a bug in configure.ac that prevents installation of sample rc config files
+  [ Thanks to Daniel Fraga ]
+* Fix bugs in Makefile.am and configure.ac 
+  [ Thanks to Daniel Fraga ]                                                 
+* Some bugfix in use of temporary stats and maxage files
+* Some changes in Makefile.am and configure.ac
+* Release 0.62alpha
+
+2003.11.26 <stefko5@inwind.it>
+
+* Update rottlogex documentation
+* Corrected a bug in Makefile
+  [ Thanks to Daniel Fraga ]
+* Release 0.61alpha
+
+2003.11.24 <stefko5@inwind.it>
+
+* Fix bug in --force|--forceonly (use of control files)
+* Add use of a logrotate's SUSE extension: dateext parameter
+* Remove restriction about rotate and time related meta-variables.
+* Add find check in configure.ac 
+* Add use of a logrotate's SUSE extension: maxage parameter
+
+2003.11.23 <stefko5@inwind.it>
+
+* Now --checkrc doesn't run scripts/actions during check
+
+2003.11.22 <stefko5@inwind.it>
+
+* Speed up is_taboo function 
+
+2003.11.20 <stefko5@inwind.it>
+
+* Update documentation
+* Add Log2Rot formally. 
+* Update INSTALL
+* Log2Rot: erased FOOL ltrim and rtrim and replaced with trim
+* Log2Rot to handle multiple files correctly
+
+2003.11.18 <stefko5@inwind.it>
+
+* Add use of nosharedscripts in period config files
+* Add use of [no]sharedscripts in main rc file
+* Update checkrc to recognize main suboption
+* Fix parsing error in rottlog command line parameter --debug
+* Add tabooext global and local parameter
+* Bug fixes in new code for period-related global options.
+* Update rottlogconf.5 and rottlogrc.5 and related info pages
+* Update Log2Rot
+
+2003.11.17 <stefko5@inwind.it>
+
+* Add use of period-related global options: 
+  Allow use of default values for single period config files, which allows
+  defining options at beginning of period related config.
+  [ Many thanks to Marc Haber for pointing this gap out to me with logrotate ]
+
+2003.11.15 <stefko5@inwind.it>
+
+* Finished translation from man to texinfo format. 
+* Add check for BASE_TMP_DIR in configure.ac
+* Release 0.60alpha
+
+2003.11.11 <stefko5@inwind.it>
+
+* Add use of configure and automake
+* Begin adding texinfo documentation
+
+2003.11.01 <stefko5@inwind.it>
+
+* Change all variables called containing 'path' to 'dir' to
+  use GNU conventions
+
+2003.10.05 <stefko5@inwind.it>
+
+* Update documentation to explain differences between two rotate methods
+* Use follow_symlinks in cp_mod_own
+* Add create_logrotate parameter to became better logrotate compatible
+* Change behaviour of 'size' parameter to be consistent with documentation
+* Release 0.55alpha
+
+2003.10.01 <stefko5@inwind.it>
+
+* Add log_rotate global option to allow log rotation à la logrotate
+  (thanks to Mark Haber)
+* Add log_rotate option to daily, weekly and monthly config files
+* Add nostoredir global option
+* Add sample_rc_logrotate
+
+2003.09.28 <stefko5@inwind.it>
+
+* Add -d|--debug option to rottlog (thanks to Mark Haber :-)
+
+2003.08.31 <stefko5@inwind.it>
+
+* Add mailopt zip
+* Update documentation: add mailopt to rottlogconf man page
+
+2002.11.19 <stefko5@inwind.it>
+
+* Add mailopt all 
+
+2002.11.04 <stefko5@inwind.it>
+
+* Bug fixes in statistical report
+
+2002.11.02 <stefko5@inwind.it>
+
+* Add sed_error and require_sw functions in install.sh
+* Sync virottrc to new parameters of main rc config file.
+  (Only virottrc is up to date.)
+* Better use of awk in read_mainrc function in rottlog code
+* Speed up --help and --version output
+
+2002.10.24 <stefko5@inwind.it>
+
+* Many changes in mail_to_admin function
+* Add mailstats parameter in main rc config file
+* Remove mailopt stat from period-configuration files
+
+2002.10.18 <stefko5@inwind.it>
+
+* Add get_control_info function in rottlog
+* Better sanity check for rotate parameter and time-related metavariables
+* Update documentation
+* Release 0.51alpha
+
+2002.10.17 <stefko5@inwind.it>
+
+* Fix a bug that prevents rotation: period must check only if defined!
+* Improve mail_to_admin function
+* Add mailopt parameter
+
+2002.10.14 <stefko5@inwind.it>
+
+* Add check in install.sh script
+* Fix missing documentation and man pages installation in install.sh
+
+2002.10.13 <stefko5@inwind.it>
+
+* Improve --summary output and fix a bug in command line parameter
+
+2002.10.12 <stefko5@inwind.it>
+
+* Bugfix in --checkrc option
+
+2000.10.08 <stefko5@inwind.it>
+
+* Update virott* to use 'period' parameter only in custom config file
+* Change sample_daily with sample_period in package distribution
+* Release 0.50alpha
+
+2000.10.07 <stefko5@inwind.it>
+
+* Update rottlog to be consistent with period.sh
+* Bug fix due to custom config file adding
+* Bug fix in --force/--forceonly parameters
+* Update in mail_to_admin function
+
+2002.10.05 <stefko5@inwind.it>
+
+* Update rottlog to use period.sh fill_timevar function
+
+2002.10.05 <stefko5@inwind.it>
+
+* Add rottlogrc.5 man page
+
+2002.10.03 <stefko5@inwind.it>
+
+* Add use of "inlined OR" in period definition
+* Update rottlogconf man page
+
+2002.09.30 <stefko5@inwind.it>
+
+* Add capability to use multiple intervals in period definition 
+  (i.e. '15d sep-dec mon-sun 09:00')
+
+2002.09.29 <stefko5@inwind.it>
+
+* Remove recursive call in period.sh
+* Bug fix in period.sh that prevents parsing token like '!mon-sun'
+
+2002.09.27 <stefko5@inwind.it>
+
+* Improve period.sh: add functions and separate timestamp code from
+  parse_period function
+
+2002.09.25 <stefko5@inwind.it>
+
+* Rename rottlogmwd.5 to rottlogconf.5
+
+2002.09.24 <stefko5@inwind.it>
+
+* Add period checking for weeks in period.sh
+* More updates in README
+* Better handling of mmM, DDd and WWw parameters in period.sh
+* Update rottlogmwd.5
+
+2002.09.23 <stefko5@inwind.it>
+
+* Add sanity check for end_t variable and some error handling in period.sh
+* Update documentation adding period definition (README)
+
+2002.09.21 <stefko5@inwind.it>
+
+* Move all time-related variables filling beginning of main part
+* Make time-related variables refer only to one time
+* Update period.sh code.
+
+2002.09.20 <stefko5@inwind.it>
+
+* Preparing to use custom config file: moved call to parse_forceday and
+  added timestamp checking for each file using forceday parameter
+
+2002.09.13 <stefko5@inwind.it>
+
+* Add rottlogmwd.5
+* Update web site
+
+2002.09.12 <stefko5@inwind.it>
+
+* Add use of @WEEK and SunMon variable (Thanks to Frederic Connes)
+* Update README
+* Improve forceday parameter (Thanks to Frederic Connes)
+* Add --forceonly option
+* Update rottlog.8
+
+2002.09.05 <stefko5@inwind.it>
+
+* Cosmetic change in debecho function 
+* Release 0.36alpha
+
+2002.09.04 <stefko5@inwind.it>
+
+* Fix bug in rottlog that prevents correct use of createdir 
+  in main rc file (thanks to Frederic Connes)
+* Fix some typos; remove useless blank spaces (thanks to Frederic Connes)
+* Fix bug in nomail parameter.
+* Fix bug in metavariables expansion. Now @n metavar works with storedir 
+  parameter too (thanks to Frederic Connes)
+* Add default_storefile in main rc config file (thanks to Frederic Connes)
+* Update documentation
+
+2002.09.03 <stefko5@inwind.it>
+
+* Bug fix in rottlog code that prevents making tempdir
+* Add check for awk in install.sh
+* Release 0.35alpha
+
+2002.08.29 <stefko5@inwind.it>
+
+* Add use of @1...@n metavariables
+* Fix case...esac block in expand_metavar
+* Fix a bug using DATE_OFFSET variable
+* Fix a bug in virott*
+* Release 0.34alpha
+* Fix a typo in install.sh that prevents install
+* Release 0.34.1alpha
+
+2002.08.27 <stefko5@inwind.it>
+
+* Update install.sh code to be consistent with DefConf.inc,
+  in man pages during install process
+* Update rottlog.8 man page
+
+2002.08.12 <stefko5@inwind.it>
+
+* Change time check for monthly configuration file: it's no more than 
+  30 days, but it is based on previous month
+* Update documentation
+* Update create parameter to accept 0 or 3 parameters (like createdir) 
+* Add use of fil_[own,perm,grp] variables in virott* too
+* Update sample_rc
+* Update README file to add fil_* description
+
+2002.08.11 <stefko5@inwind.it>
+
+* Change BASE_TMP_DIR
+* Some cleanup
+
+2002.08.09 <stefko5@inwind.it>
+
+* BUG fixed in variables initialization while parsing include directive
+
+2002.08.08 <stefko5@inwind.it>
+
+* Update README file
+* BUG fixed in Slackware package creation
+
+2002.08.06 <stefko5@inwind.it>
+
+* Update show_log to use variables filled in by read_and_do procedure
+* Release 0.33alpha
+
+2002.08.05 <stefko5@inwind.it>
+
+* Add use of dateoffset parameter (thanks to Thomas Bähr)
+* Add use of forceday parameter in daily configuration file 
+  (thanks to Thomas Bähr)
+* Add use of dateoffset and forceday in virott*
+* Update README file. Sorted parameters.
+
+2002.07.09 <stefko5@inwind.it>
+
+* Add sharedscripts check in virott*
+* Add rottlogmwd.8 man page
+
+2002.07.05 <stefko5@inwind.it>
+
+* Fix a bug in rottlog wildcard expansion in rottlog.  Now searches only
+  for files and optionally for symlinks.
+
+2002.07.02 <stefko5@inwind.it>
+
+* Correct a serious bug in source editing done during install
+* Release 0.32alpha
+* Add rottlog(8) and rottlogex(5) man pages
+* Change install.sh and DefConf.inc to install man pages too
+* Add sharedscripts option
+* Some bugfixes in filename expansion and include files searching
+
+2002.06.20 <stefko5@inwind.it>
+
+* Add use of a lockfile to prevent multiple executions of program
+* Update man pages
+
+2002.06.13 <stefko5@inwind.it>
+
+* Use of METAK variable in virottrc
+* Add sanity checks for [tar]collate options
+* Release 0.31alpha
+
+2002.06.05 <stefko5@inwind.it>
+
+* Add cp_mod_own to copy owner and permissions 
+* Preserve tarcollate file permissions in archives.
+* Update error codes
+
+2002.06.04 <stefko5@inwind.it>
+
+* Collate compress concatenated files
+* Update tarcollate
+* Correct typos in error messages (Thanks to Daniel Fraga)
+* Begin to write man pages
+
+2002.06.03 <stefko5@inwind.it>
+
+* Add collect/tarcollect capability
+* Delayed compress works better: compressed file will still have old timestamp
+* Minor bug fixes
+* Update documentation
+* Release 0.30alpha
+
+2002.05.20 <stefko5@inwind.it>
+
+* Add examples in sample_monthly and correct a mistake in first sample =8-Q
+* Add use of @TMPDIR in virott*
+* Bug fix in virott* to correctly handle actions and scripts
+
+2002.05.12 <stefko5@inwind.it>
+
+* Fix a bug in tmpdir creation
+* Add @TEMPDIR meta-variable to use a temporary dir in scripts
+
+2002.05.10 <stefko5@inwind.it>
+
+* Update sample_monthly
+
+2002.05.03 <stefko5@inwind.it>
+
+* Fix a bug in expand_filename and is_readable (if nomissingok defaulted 
+  to 1 a nonexistent included file was not generating an error)
+* Fix a bug in directories creation
+* Fix setup_vars behavoir
+* Fix use of MAIL/mail variables
+* Minor changes in mail_to_admin and rottlog
+* Fix a bug in filename checking in virott*
+* Release 0.24alpha
+* Fix a bug in NO_SHOWLOG variable use
+* Add capability to specify relative and absolute paths to logfile
+  in --showlog parameter
+
+2002.05.02 <stefko5@inwind.it>
+
+* Add "include" support in virott*
+* Release 0.23alpha
+
+2002.04.29 <stefko5@inwind.it>
+
+* Update showlog track delayed files
+* Update shoud with NEXT_EXT and FILENAME expansion metavars
+* Update lastnum with NEXT_EXT expansion metavar
+* Use STATPATH to configure location of .delayed_files
+* Add use of ROTT_STATDIR in install.sh
+* Update install.sh ETC_MODE capabilities
+* Add use of include "anomal-option" in monthly|weekly|daily rc files
+* Have rottlog read main rc file once
+* Change default dir_perm value. 0300 is wrong; 0700 is right.
+* Enable delaycompress functionality
+* Update documentation
+
+2002.04.27 <stefko5@inwind.it>
+
+* Harden controls on glob use
+
+2002.04.26 <stefko5@inwind.it>
+
+* Update documentation
+* Update virottrc to handle new parameters
+* Re-activated trap to remove tmp dir before exit
+
+2002.04.25 <stefko5@inwind.it>
+
+* Add missingok and nomissingok parameters
+* Change layout of read_and_do function
+* Add use of firstaction/lastaction...endaction
+* Change read_mainrc function
+* Update error codes
+* Update documentation
+
+2002.04.24 <stefko5@inwind.it>
+
+* Add sanity check to avoid use of time related functions in conjunction
+  with rotate parameter
+* Release 0.22alpha
+
+2002.04.23 <stefko5@inwind.it>
+
+* Add INSTALL file
+* Update sample_monthly
+* Better handling of NEXT_EXT and FILENAME metavars. This removes a bug
+  in FILENAME expansion.
+* Default to nocompress compress and packer are not filled in main rc file
+
+2002.04.22 <stefko5@inwind.it>
+
+* Fix bug in install.sh (fill MAINPATH correctly).
+* Remove unused echo entries in virottrc
+* Add check_perms in rottlog
+* Invert order of log rotation: daily, weekly, monthly
+
+2002.04.21 <stefko5@inwind.it>
+* Fix bug in install.sh (missing $ in last line).
+  Thanks to Daniel Fraga
+
+2002.04.18 <stefko5@inwind.it>
+
+* Update README
+* Fix bug in install.sh
+* Release 0.21alpha
+
+2002.04.17 <stefko5@inwind.it>
+
+* Add nostoredir parameter
+* Update redundant logfile entry check
+* speedup metavar expansion
+
+2002.04.15 <stefko5@inwind.it>
+
+* Modify README
+* Update --help output
+* Check redundant logfile entries in same config file
+
+2002.04.13 <stefko5@inwind.it>
+
+* Now prerotate/postrotate scripts really use meta-variables
+* Improve command line handling
+* added --pager
+* Make --showlog work using meta-vars
+* Add controls to main rc file
+* Add use of DefConf.inc file to allow configure install procedure
+* Add use of follow_symlinks in main rc file
+* Add some exit code
+
+2002.04.09 <stefko5@inwind.it>
+
+* Add use of META-VARIABLES
+* Change lastnum function
+* Fix a bug that was rotating same file multiple times
+* Add --force command line option
+* Add createdir option
+* Add maxdepth option (can be used in all configuration files)
+* Update virott* configuration files to handle new parameters
+* Update README file. Synced with new features
+* Release 0.20alpha
+* Fix a bug that can exec pre/post rotate scripts to logs
+
+2002.04.08 <stefko5@inwind.it>
+
+* Add capability to use * in filenames
+* Fix a silly bug in virottrc tmp making directory
+* Fix a bug in virottrc so signal 2 is well "trapped"
+* Inverted sequence of config file reading: now is monthly, weekly, daily
+* Add error handling in packer call
+* More about size param: now uses k,m,b
+* Add nocreate parameter
+
+2002.04.07 <stefko5@inwind.it>
+
+* Fix read_and_do function to exit after loaded USCITA variable
+* Add size parameter
+* Fix a bug in prepare_rotate function so numero is well filled in each case
+* Release 0.10alpha
+
+2002.04.03 <stefko5@inwind.it>
+
+* Fix bug in version display
+
+2002.04.02 <stefko5@inwind.it>
+* Remove a bug in syntax function
+* Add tmpdir generating code "à la checkinstall v1.4.1" to virott*
+* Make an install.sh script to install rottlog files
+* Release 0.9alpha
+
+2002.03.28 <stefko5@inwind.it>
+
+* Add to show_log capability to read uncompressed logs
+* Add tmpdir generating code taken from checkinstall v1.4.1 
+* Remove use of TRAP_MORE_SIGNALS
+* Add handling of an error during logfile compress
+* Change read_and_rotate to read_and_do
+* Add --summary and --checkrc options
+* Release 0.8alpha
+
+2002.03.27 <stefko5@inwind.it>
+
+* Change file permission of rottlog (0700)
+* Add error codes
+* Add showlog function and variables to main rc file
+* Release 0.7alpha
+
+2002.03.26 <stefko5@inwind.it>
+
+* Add virott[rc|month|week|day]
+* Release 0.6alpha
+
+2000.10.09 <stefko5@inwind.it>
+
+* Add ChangeLog
+

@@ -1,0 +1,90 @@
+'\" t
+.\" Copyright (C) 2001, 2002 Stefano Falsetto
+.\" Copyright (C) 2008 D E Evans
+.\"
+.\" This file is part of GNU rottlog.
+.\"
+.\" See section COPYING for conditions for redistribution
+.\"
+'\" t
+
+.TH ROTTLOG "8" "September 2008" "GNU Rot[t]log" "System Administrator's Manual"
+.SH NAME
+GNU Rot[t]log \- A log management utility
+.SH SYNOPSIS
+.B rottlog [options]
+.SH DESCRIPTION
+GNU Rot[t]log is the GNU log management utility. It was originally
+authored in 2000 by Stefano Falsetto on Slackware to rotate his logs. It
+was later added in 2002 to Savannah to become a GNU Project.
+.SH OPTIONS
+.HP
+\fB\-\-help\fR, \fB\-h\fR
+.IP
+Display usage summary and descriptions
+.HP
+\fB\-\-version\fR, \fB\-V\fR
+.IP
+Display version, disclaimer, and exit
+.HP
+\fB\-\-defaults\fR
+.IP
+Display default values and exit
+.HP
+\fB\-\-showlog\fR <logfile>, \fB\-s\fR <logfile>
+.IP
+Show with a pager (un)compressed archived logs
+.HP
+\fB\-\-pager\fR <program>
+.IP
+Use <program> for paging output of showlog
+.HP
+\fB\-\-summary\fR <logfile>
+.IP
+Display a summary of some useful information about <logfile>
+.HP
+\fB\-\-checkrc\fR <what>,<what>,...
+.IP
+Check for syntax of specified configuration file(s)
+<what> must be one of: daily, weekly, monthly, custom, all
+.HP
+\fB\-\-force\fR [<what>]
+.IP
+Force rotation/archiving of all entries in <what> config file
+and subsequent period\-related config files.
+<what> must be one of: daily, weekly, monthly
+Rotation/archiving of all logfiles will be forced if <what>
+is not used.
+.HP
+\fB\-\-forceonly\fR [<what>]
+.IP
+Force rotation/archiving of all entries only in <what> config
+file. See \fB\-\-force\fR option for more information.
+.HP
+\fB\-\-debug\fR
+.IP
+Let rottlog to be verbose.
+.SH COPYING
+Copyright \(co 2001, 2002 by Stefano Falsetto
+.br
+Copyright \(co 2008 by D E Evans
+.PP
+Permission is granted to copy, distribute or modify this document
+(or both) under the terms of the GNU Free Documentation License,
+Version 1.3, or any later version published by the Free Software
+Foundation; with no Invariant Sections, no Front-Cover Texts,
+and no Back-Cover Texts.  
+
+.SH "SEE ALSO"
+The full documentation for
+.B rottlog
+is maintained as a Texinfo manual.  If the
+.B info
+and
+.B rottlog
+programs are properly installed at your site, the command
+.IP
+.B info rottlog
+.PP
+should give you access to the complete manual.
+

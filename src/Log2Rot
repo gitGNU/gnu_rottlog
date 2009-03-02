@@ -1,0 +1,554 @@
+#!/bin/bash
+# Copyright (c) 2003, 2004 Stefano Falsetto <falsetto@gnu.org>
+# Copyright (c) 2008 D E Evans <sinuhe@gnu.org>
+#
+# This program is free software.  You can redistribute it, or modify it,
+# or both, under the terms of the GNU General Public License version 3
+# (or any later version) as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses>.
+#
+
+PREFIX="$HOME/sviluppo/CVSROOT/rottlog/tmp/etc"
+ETCDIR="$PREFIX/RottLog"
+DEF_DIRMODE="755"
+CONFIG_LOGROTATE="$PREFIX/logrotate.conf" # /etc/logrotate.conf
+BASE_TMP_DIR="$HOME/sviluppo/CVSROOT/rottlog/tmp/Log2Rot"
+
+##########################################################################
+#                                 ERROR CODES                            #
+##########################################################################
+E_FILE_NOREAD=10
+E_SYMLINK=11
+E_CONFFILE=12
+
+
+##########################################################################
+#                                                                        #
+#                               HERE BEGIN CODE                          #
+#                                                                        #
+##########################################################################
+trap 'rm -rf $TEMPDIR ; exit $USCITA' 0
+
+debecho () {
+  if [ ! -z "$DEBUG" ]; then
+   echo "$1" >&2
+  fi
+}
+
+
+# Don't allow pressing CTRL+C (or sending SIGINT) during TEMPDIR generation
+trap '' 2
+
+
+make_tmpdir () {
+  # Following code is taken from:
+  # checkinstall v1.4.1 (c) Felipe Eduardo Sanchez Diaz Duran
+  # (with little changes)
+
+  # Find a safe TEMPDIR
+  [ ! -d $BASE_TMP_DIR ] && mkdir -p $BASE_TMP_DIR
+
+
+  local tmpd=${BASE_TMP_DIR}/`awk 'BEGIN { srand(); for (i=1;i<21;i++) { a=95; while (a > 90 && a < 97) { a=65+int(50*rand())}; printf("%c", a) } }'`
+  [ -e "$tmpd" ] && rm -rf "$tmpd"
+  if [ -e "$tmpd" ]; then
+     echo
+     echo "temp dir exists already."
+     echo "This looks like a symlink attack!"
+     echo
+     echo "*** Aborting"
+     echo
+     exit 1
+  fi
+
+  mkdir $tmpd
+  chmod 1700 $tmpd
+  RETURN=$?
+
+  if [ $RETURN -gt 0 ]; then
+     echo
+     echo "**** Failed to create temp dir!"
+     echo "**** Do you have write permission for ${BASE_TMP_DIR}?"
+     echo
+     echo '**** Aborting execution.'
+     echo
+     exit  $RETURN
+  fi
+
+  # I think it's a good idea to let rottlog to ignore these signals, but
+  # if you think it's not useful, you can comment it out.
+  trap '' 1 2 5 6
+
+  TEMPDIR="$tmpd"
+  tmpfil=$TEMPDIR/rotttempfile.$$
+  NEWtmpFILE=$TEMPDIR/rottnewtmpfile.$$
+  PURGED_FILE=$TEMPDIR/rottpurgedfile.$$
+  IFINCLUDE_FILE=$TEMPDIR/rottifincludefile.$$
+  TMPERR=$TEMPDIR/rotttemperr.$$
+  TMPERRMSG=$TEMPDIR/rotttempmsg.$$
+  TMPBLOCK=$TEMPDIR/rotttempblock.$$
+}
+
+
+is_readable() {
+  if [ ! -r "$1" ]; then
+    if [ ! -z "$missingok" ] && [ "$2" != "log" ]; then
+      debecho "Missing? OK!"
+      return 1
+    else
+      echo "ERROR: Could'nt read $2 file!"
+      echo "Filename: $1"
+      USCITA=$E_FILE_NOREAD
+      exit $USCITA
+   fi
+  fi
+  if [ -L "$1" ] && [ $follow_symlinks -eq 0 ]; then
+    echo "Can't follow symbolic links!"
+    echo "Filename: $1"
+    USCITA=$E_SYMLINK
+    exit $USCITA
+  fi
+}
+
+is_quoted() {
+  local f="$1"
+  
+  if [ $(expr index "$f" "\"" ) -eq 0 ]; then
+    f=${f// /}
+  else
+    f=${f//\"/}
+  fi
+  eval $2=\"'$f'\"
+}
+
+expand_filenames () {
+  # Filename expansion
+  debecho "Begin filename expansion"
+  if [ $(expr index "$filenames" ",") -ne 0 ]; then
+    index=0
+    OLDIFS="$IFS"
+    IFS=","
+    for f in $filenames; do
+      is_quoted "$f" f
+      is_wildcard "$f"
+      if [ $? -eq 0 ]; then
+        debecho "Normal fill of pcldr (commas)"
+        is_readable "$f" "$1"
+        if [ $? -eq 1 ]; then
+          run_lastaction
+          continue
+        fi
+        pcldr[$index]="$f"
+        index=$[ index + 1 ]
+      else
+        debecho "Wildcard filling (commas)"
+        for f in $wild_filenames; do
+          is_quoted "$f" f
+          is_readable "$f" "$1"
+          pcldr[$index]="$f"
+          debecho "Inserted file: ${pcldr[$index]}"
+          index=$[ index + 1 ]
+        done
+      fi
+    done
+    IFS="$OLDIFS"
+  else
+    is_quoted "$filenames" f
+    is_wildcard "$f"
+    if [ $? -eq 0 ]; then
+      is_readable "$f" "$1"
+      if [ $? -eq 1 ]; then
+        run_lastaction
+        continue
+      fi
+      debecho "Normal fill of pcldr"
+      pcldr[0]="$f"
+    else
+      for ff in $wild_filenames; do
+        is_quoted "$ff" ff
+        is_readable "$ff" "$1"
+        pcldr[$index]="$ff"
+        debecho "Wildcard filling"
+        index=$[ index + 1 ]
+      done
+    fi
+  fi
+  debecho "End of filename expansion"
+}
+
+##########################################################################
+
+write_to_file () {
+  # extension????????
+  local fn=$1
+  shift
+  local cmd="$@"
+
+  debecho "checking if starting a block"
+  if [ "${cmd//{/}" != "$cmd" ]; then
+    debecho "Starting a block!!"
+    debecho "Handling multiple files definitions"
+    echo "${cmd// \//,/}" >>"$fn"
+    debecho "Inserted ${cmd// \//,\/}"
+  else
+    (
+    set -- $cmd
+    case "$1" in
+      copytruncate*|extension*|errors*|nocopytruncate|\
+        include*|mailfirst)
+          debecho "Commenting non-handled keyword: $cmd"
+          echo "# TODO: probably support $cmd" >>"$fn"
+          shift $#
+      ;;
+      daily|weekly|monthly)
+          debecho "Simply ignoring these keywords..."
+          shift
+          ;;
+      mail)
+          debecho "mail translated to touser"
+          echo "touser $2" >>"$fn"
+          shift
+          ;;
+      olddir)
+          debecho "Olddir translated to storedir"
+          echo "storedir $2" >>"$fn"
+          shift
+          ;;
+      noolddir)
+          debecho "Noolddir translated to nostoredir"
+          echo "nostoredir" >>"$fn"
+          ;;
+      dateext)
+          debecho "dateext translated using storefile"
+          # What I must use??
+          #echo "storefile @BASENAME.@NEXT_EXT-@YEAR@MONTH@DAY.@COMP_EXT" >> "$fn"
+          echo "storefile @BASENAME.@NEXT_EXT-@YEAR@MONTH@DAY" >> "$fn"
+          ;;
+      size*)
+          debecho "Removing unused chars from size parameter"
+          cmd="${cmd//=/ }"
+          cmd="${cmd//+/ }"
+          ;;
+      *)
+          #debecho "write_to_file: Removing = chars..."
+          #cmd="${cmd//=/ }"
+          debecho "write_to_file: Recognized command: $cmd"
+          echo "$cmd" >>"$fn"
+          ;;
+    esac
+  )  
+  fi
+}
+
+
+trim() {
+  local tmp=$(echo $1)
+  eval $2=\"'$tmp'\"
+}
+
+###############################################################################
+#                                   MAIN                                      #
+###############################################################################
+
+# Parameter handling
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -d|--debug)
+              DEBUG=1
+              ;;
+    -c|--conf)
+              CONFFILE="$2"
+              shift
+              if [ ! -f $CONFFILE ]; then
+                echo "Error: Supplied file doesn't exist!"
+                exit $E_CONFFILE
+              fi
+              ;;
+  esac
+  shift
+done
+
+debecho "Making directory tree..."
+make_tmpdir
+if [ -z "$CONFFILE" ]; then
+  debecho "Setting default values..."
+  COMPRESS="-9c"
+  UNPACKER="gunzip"
+  PACKER="gzip"
+  EXTENSION="gz"
+  UNCOMPRESS="-c"
+else
+  source $CONFFILE
+fi
+
+mkdir -p $ETCDIR
+
+for h in monthly weekly daily; do
+  mkdir -p $ETCDIR/${h}.d
+  chmod $DEF_DIRMODE $ETCDIR/${h}.d
+done
+
+# Devo leggere il file /etc/logrotate.conf e impostare:
+# ROTATE
+# MOWEDA
+# MAILER
+# TOUSER
+# NOTIFEMPTY
+
+# TODO
+MAILER="/usr/sbin/sendmail -t"
+
+BLOCK=
+while read l; do
+  trim "$l" l
+  #ltrim "$l" l
+  #rtrim "$l" l
+
+  if [ -z "$l" ] || [ "${l:0:1}" = "#" ]; then
+    continue
+  fi
+  
+  if [ $(expr "$l" : ".*}") -ne 0 ]; then
+    if [ -z "$block_rotate" ]; then
+      echo "rotate $ROTATE">>$TEMPDIR/block
+    fi
+    echo "$l">>$TEMPDIR/block
+    debecho "End of the block..."
+    cp $TEMPDIR/block $ETCDIR/${move_to}.d/$BLOCK_FILE
+    block_rotate=
+    BLOCK=
+    continue
+  fi
+  if [ ! -z "$BLOCK" ]; then
+    # TODO: non ignorare
+    case "$l" in
+      monthly|weekly|daily)
+        move_to=$l
+  continue
+  ;;
+      rotate*)
+        block_rotate=1
+  ;;
+    esac
+    debecho "Inserting: $l"
+    echo "$l" >>$TEMPDIR/block
+    continue
+  fi
+  
+  if [ $(expr "$l" : ".*{") -eq 0 ]; then
+    debecho "Analyzing row -$l-"
+    # Fuori dai blocchi di configurazione
+    case "$l" in
+      rotate*)
+        ROTATE=${l:7}
+  debecho "Default rotation period is: $ROTATE"
+      ;;
+      monthly|weekly|daily)
+        MOWEDA="$l"
+  debecho "Default handling period is: $MOWEDA"
+      ;;
+      errors*)
+        TOUSER="${l:7}"
+  debecho "Destination user is: $TOUSER"
+      ;;
+      notifempty|ifempty)
+        NOTIFEMPTY=${l:0:2}
+      ;;
+      nocreate|create*)
+        NOCREATE=${l:0:2}
+      ;;
+      nocompress|compress)
+        NOCOMPRESS=${l:0:2}
+      ;;
+      compresscmd*)
+        is_quoted ${l:12} PACKER
+      ;;
+      uncompresscmd*)
+        is_quoted ${l:14} UNPACKER
+      ;;
+      compressext*)
+        is_quoted ${l:12} EXTENSION
+      ;;
+      compressoptions*)
+        is_quoted ${l:16} COMPRESS
+      ;;
+      include*)
+        check="${l:8}"
+  if [ -d "$check" ]; then
+    INCLUDE_FILES="$INCLUDE_FILES $check/*"
+  else
+          INCLUDE_FILES="$INCLUDE_FILES $check"
+  fi
+      ;;
+    esac
+  else
+    BLOCK=1
+    BLOCK_FILE=$(basename "$l"|rev|cut -d'{' -f2-|rev)
+    debecho "Start block $l, BLOCK_FILE=$BLOCK_FILE"
+    block_rotate=
+    move_to=$MOWEDA
+    echo "$l" >$TEMPDIR/block
+  fi
+done <$CONFIG_LOGROTATE
+
+for p in monthly weekly daily; do
+cat <<EOF >$ETCDIR/$p
+# This is a configuration file made automatically with Log2Rot $VERSION.
+# Modify to meet your needs.
+
+# $p configuration file for GNU Rot[t]Log
+include $ETCDIR/${p}.d
+
+EOF
+done
+
+LOCALHOST=$(domainname --fqdn)
+
+cat <<EOF >$ETCDIR/rc
+# Main configuration file for GNU Rot[t]Log
+# These values can all be overriden in monthly, weekly, daily files
+# 
+# 
+#
+# This is a configuration file made automatically with Log2Rot $VERSION.
+# Modify to meet your needs.
+
+# Compressor program
+packer="$PACKER"
+
+# Option to packer to compress and send to stdout
+compress="$COMPRESS"
+
+# DE-Compressor program
+unpacker=$UNPACKER
+
+# Option to decompressor to send output do stdout
+uncompress="-c"
+
+# Normal extension of compressed files (used in decompress ONLY)
+extension="$EXTENSION"
+
+# Pager used to view uncompressed logs
+pager="less"
+
+# Sender of mail messages
+fromuser="rottlog@$LOCALHOST"
+
+# Receiver of mail messages
+touser="$TOUSER"
+
+$(
+  if [ -z "$TOUSER" ]; then
+    echo "# Don't mail any report"
+    echo "nomail"
+  fi
+)
+
+# Mail program to send messages. Must be used option to read header recipient 
+# addresses.
+mail="$MAILER"
+
+# Default Maximum depth to use with * metachar
+maxdepth=0
+
+# if set to 1 will follow symlinks
+follow_symlinks=0
+
+# Default mode, owner and group for newly created dirs (createdir parameter)
+dir_perm=0700
+dir_own=root
+dir_grp=users
+
+# Default mode, owner and group for newly created logfiles (create parameter)
+fil_perm=0640
+fil_own=root
+fil_grp=users
+
+# Silently remove from status file no longer existant delayed logfiles 
+remove_missing
+
+# Store archived logfiles in the same directory where "live" logfiles resides
+nostoredir
+
+# Copy mode, owner and group from old logfile if create is called without 
+# parameters
+create_logrotate
+
+# Rotate files with logrotate method
+log_rotate
+
+EOF
+
+(
+  if [ "$NOTIFEMPTY" = "no" ]; then
+    echo "# Use this to handle files of 0 size too"
+    echo "notifempty=1"
+  fi
+  if [ "$NOCOMPRESS" = "no" ]; then
+    echo "# Don't compress old logfiles"
+    echo "nocompress=1"
+  fi
+  if [ "$NOCREATE" = "no" ]; then
+    echo "# Don't create new void logfile"
+    echo "nocreate=1"
+  fi
+  echo
+) >>$ETCDIR/rc
+
+debecho "Here INCLUDE_FILES=$INCLUDE_FILES"
+
+move_to=
+if [ ! -z "$INCLUDE_FILES" ]; then
+  debecho "Including files..."
+  for i in $INCLUDE_FILES; do
+    bname=$(basename $i)
+    debecho "Creating file $bname..."
+    > $TMPBLOCK
+    while read 'line'; do
+      debecho "Reading row: $line"
+      trim "$line" line
+      debecho "After [l,r]trim: $line"
+      case "$line" in
+        "")
+           continue
+           ;;
+        rotate*)
+           block_rotate=1
+           ;;
+        *{)
+           debecho "Here starting block: $line"
+           > $TMPBLOCK
+           block_rotate=
+           ;;
+        })
+           debecho "Here end a block..."
+           if [ -z "$move_to" ]; then
+             debecho "Moving in default period $MOWEDA..."
+             move_to=$MOWEDA
+           fi
+           if [ -z "$block_rotate" ]; then
+             echo "rotate $ROTATE">>$TMPBLOCK
+           fi
+           echo "}">>$TMPBLOCK
+           debecho "Appending TMPBLOCK to $ETCDIR/${move_to}.d/$bname..."
+           cat $TMPBLOCK >>$ETCDIR/${move_to}.d/$bname
+           move_to=
+           continue
+           ;;
+        monthly|weekly|daily)
+           move_to=$line
+           ;;
+      esac
+      debecho "Checking and inserting: $line"
+      write_to_file $TMPBLOCK "$line"
+    done<$i
+  done
+fi
+

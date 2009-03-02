@@ -1,0 +1,53 @@
+This documents Log2Rot script under src directory
+
+What is it
+===========
+
+Log2Rot is a little script useful to convert already exsistent
+configuration files of logrotate(8) to the GNU Rot[t]Log syntax.
+It should not modify any original file, and will create a new tree
+containing converted files.
+
+How it works
+============
+
+Log2Rot will make this tree under ETCDIR (see VARIABLES):
+    ETCDIR
+      |---->monthly.d
+      |---->weekly.d
+      |---->daily.d
+      
+Log2Rot reads logrotate.conf and makes a new main rc, monthly,
+weekly, and daily file.  It will save each configuration block found
+in logrotate.conf in a separate file.  All included files will be
+converted too.  If it finds an unsupported parameter, it will comment
+the line in the converted config file.
+
+VARIABLES
+=========
+
+There is a number of variables that can be modified by the user:
+
+  PREFIX 	
+  This is the original basedir containing logrotate.conf and logrotate.d
+
+  ETCDIR	
+  This is the to-be-created basedir containing the new tree of converted
+  files.
+
+  CONFIG_LOGROTATE
+  This is the complete filename of logrotate.conf (the best choice would be
+  to leave its value untouched).
+
+  BASE_TMP_DIR
+  This is the basedir that will contain temporary files.
+
+
+Copyright @ 2003, 2004 Stefano Falsetto <falsetto@gnu.org>
+Copyright @ 2008 D E Evans <sinuhe@gnu.org>
+  
+Permission is granted to copy, distribute, or modify this document
+(or both) under the terms of the GNU Free Documentation License,
+Version 1.2, or any later version published by the Free Software
+Foundation; with no Invariant Sections, no Front-Cover Texts,
+and no Back-Cover Texts.

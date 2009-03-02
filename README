@@ -1,0 +1,16 @@
+                   _          _       
+                  /_ |\ || |  |_) _ |_  |_  |   _  _
+                  \_|| \||_|  | \(_)(_, (_, (_,(_)(_)
+                  Originally by Stefano Falsetto ,_)
+                               <falsetto@gnu.org>
+
+
+This is GNU Rot[t]Log.
+Archive, rotate, compress, and email system logs.
+
+To install this program please read INSTALL.  See the info manual for
+details on using this program.
+
+Rot[t]log requires GNU coreutils, grep, gawk, and bash, and is intended
+for the GNU system, (including Linux based GNU systems).  You should
+also have an MTA for mail processing.

@@ -1,0 +1,9 @@
+# This should work with gNewSense, GNUstep, BLAG, or any GNU system
+# that uses GNU syslogd (from inetutils).
+/var/log/messages {
+	sharedscripts
+	postrotate
+		/bin/kill -HUP $(cat /var/run/syslogd.pid) 2> /dev/null
+	endscript
+	nocompress
+}

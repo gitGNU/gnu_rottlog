@@ -1,0 +1,526 @@
+#!/bin/bash
+# Copyright (c) 2001, 2002, 2003, 2004 Stefano Falsetto <falsetto@gnu.org>
+# Copyright (c) 2008 D E Evans <sinuhe@gnu.org>
+#
+# This program is free software.  You can redistribute it, or modify it,
+# or both, under the terms of the GNU General Public License version 3
+# (or any later version) as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses>.
+#
+
+# Don't allow pressing CTRL+C (or sending SIGINT) during TEMPDIR generation
+trap '' 2
+
+# Following code is taken from:
+# checkinstall v1.4.1 (c) Felipe Eduardo Sanchez Diaz Duran
+# (with little changes)
+
+# Find a safe TEMPDIR
+BASE_TMP_DIR="/tmp"
+TEMPDIR=${BASE_TMP_DIR}/`awk 'BEGIN { srand(); for (i=1;i<21;i++) { a=95; while (a > 90 && a < 97) { a=65+int(50*rand())}; printf("%c", a) } }'`
+[ -e "$TEMPDIR" ] && rm -rf $TMP_DIR
+if [ -e "$TEMPDIR" ]; then
+   echo
+   echo "My temp dir exists already."
+   echo "This looks like a symlink attack!"
+   echo
+   echo "*** Aborting"
+   echo
+   exit 1
+fi
+
+mkdir $TEMPDIR
+chmod 1700 $TEMPDIR
+RETURN=$?
+
+if [ $RETURN -gt 0 ]; then
+   echo
+   echo "**** Failed to create temp dir!"
+   echo "**** Do you have write permission for ${BASE_TMP_DIR}?"
+   echo
+   echo '**** Aborting execution.'
+   echo
+   exit  $RETURN
+fi
+
+# Original code from stefko begin here :-)
+
+TMPFIL=$TEMPDIR/rotttempfile.$$
+NEWtmpFILE=$TEMPDIR/rottnewtmpfile.$$
+trap - 2
+trap 'rm -Rf $TEMPDIR ; exit $USCITA' 0 2
+
+MAINPATH="/etc/rottlog"
+MAINRC="$MAINPATH/rc"
+MONTRC="$MAINPATH/monthly"
+WEEKRC="$MAINPATH/weekly"
+DAYRC="$MAINPATH/daily"
+CUSTOMRC="$MAINPATH/custom"
+
+syn_error() {
+  echo "Syntax error at $nline: $3"
+  echo ">>> $2"
+  while [ 0 ]; do
+    echo "Press ENTER to re-edit config file"
+    echo "Press CTRL+C to break process and undo last changes..."
+    read Q
+    if [ "$Q" = "" ]; then
+      return
+    fi
+  done</dev/stdout
+}
+
+to_skip () {
+  if [ $(expr "$1" : "[[:space:]]*#.*") -ne 0 ] || \
+     [ "$(echo "$1"|tr -d ' ')" = "" ]; then
+    return 1
+  fi
+  return 0
+}
+      
+ltrim () {
+  local left=0
+  while [ "${1:$left:1}" = " " ]; do
+    left=$[ left + 1 ]
+  done
+  local tmp=${1//\"/\\\"}
+  eval "$2=\"${tmp:$left}\""
+}
+
+rtrim () {
+  local right=${#1}
+  while [ "${1:$right-1:1}" = " " ]; do
+    right=$[ right - 1 ]
+  done
+  local tmp=${1//\"/\\\"}
+  eval "$2=\"${tmp:0:$right}\""
+}
+
+check_rc () {
+  local esci=0
+  local KEYS="|packer=|compress=|packdir=|fromuser=|touser=|notifempty|ifempty|mail=|unpacker=|uncompress=|pager=|extension=|maxdepth=|follow_symlinks=|nomail|nomissingok|missingok|nocompress|notifempty|nocreate|createdir|dir_perm=|dir_own=|dir_grp=|fil_perm=|fil_own=|fil_grp=|remove_missing|default_storefile=|SunMon=|mailstats|"
+  if [ -e $MAINRC ]; then
+    chmod 600 $MAINRC
+    cp -f $MAINRC $NEWtmpFILE
+    chmod 600 $NEWtmpFILE
+  fi
+  
+  nline=0
+  while [ $esci -ne 1 ]; do
+    $ED +$nline $NEWtmpFILE
+    echo "Checking syntax..."
+    nline=0
+    ERROR=
+    while read line; do
+      nline=$[ nline + 1 ]
+      to_skip "$line"
+      if [ $? -eq 1 ]; then
+        continue
+      fi
+      ltrim "$line" line
+      rtrim "$line" line
+      #if [ $(expr "$line" : ".*=.*") -eq 0 ]; then
+      #  syn_error $nline "$line" "Invalid syntax"
+      #  ERROR=1
+      #  break
+      #fi
+      KEY="$(echo "$line"|cut -d'=' -f1)"
+      VALUE="$(echo "$line"|cut -d'=' -f2)"
+      if [ "$VALUE" = "$KEY" ] || [ -z "$VALUE" ]; then
+        if [ $(expr "$KEYS" : ".*|$KEY|.*") -eq 0 ]; then 
+          syn_error $nline "$line" "Zero value to $KEY"
+          ERROR=1
+          break
+        fi
+      elif [ $(expr "$KEYS" : ".*|$KEY=|.*") -eq 0 ]; then
+        syn_error $nline "$line" "Unknown keyword or assigning an invalid value"
+        ERROR=1
+        break
+      fi
+    done<$NEWtmpFILE
+    if [ -z "$ERROR" ]; then
+      esci=1
+    fi
+  done
+  echo "Done."
+  install_rc "$MAINRC"
+  exit
+}
+
+check_wildcard () {
+  local filna="$1"
+
+  filna=${filna//\\\\[/}
+  filna=${filna//\\\\]/}
+  filna=${filna//\\\\{/}
+  filna=${filna//\\\}/}
+  filna=${filna//\\\\?/}
+  filna=${filna//\\\\\\*}
+
+  case "$filna" in
+    *\]*|*\[*|*\{*|*\}*|*\?*) 
+        syn_error $nline "$line" "Only * wildcard can be used!"
+        ERROR=1
+        return 2
+        ;;
+  esac
+  return 0
+}
+
+count_metapos() {
+  local path="$1"
+  local startt=0
+  local endt=0
+  local countt=0
+
+  num_metapos=1
+
+  while [ $startt -lt ${#path} ]; do
+    if [ ${path:startt:1} = "/" ]; then
+      startt=$[ startt + 1 ]
+    fi
+    endt=$startt
+    while [ $endt -lt ${#path} ] && [ "${path:endt:1}" != "/" ]; do
+      endt=$[ endt + 1 ]
+      countt=$[ countt + 1 ]
+    done
+    num_metapos=$[ num_metapos + 1 ]
+    startt=$endt
+    countt=0
+  done
+}
+
+
+check_mdy () {
+ 
+  if [ -e "$1" ]; then
+    chmod 600 "$1"
+    cp -f "$1" $NEWtmpFILE
+    chmod 600 $NEWtmpFILE
+  fi
+
+  local esci=0
+  local OPEN_BRACKET=
+  local KEY0P="|nocompress|postrotate|prerotate|endscript|delaycompress|ifempty|notifempty|nomail|nocreate|append-only|createdir|nostoredir|firstaction|lastaction|endaction|missingok|collate|tarcollate|sharedscripts|create|"
+  local KEY1P="|storedir|storefile|logpart|touser|rotate|size|maxdepth|createdir|firstaction|lastaction|dateoffset|create|mailopt|"
+  local KEY2P="|createdir|create|"
+  local KEY3P="|create|createdir|"
+  local METAK="|BASENAME|DIRNAME|YEAR|MONTH|DAY|WEEK|COMP_EXT|NEXT_EXT|FILENAME|DEF_DIR|"
+  local KEY1P_custom="|period|"
+  nline=0
+  while [ $esci -ne 1 ]; do
+    $ED +$nline $NEWtmpFILE
+    #echo "Checking syntax..."
+    nline=0
+    ERROR=
+    OPEN_BRACKET=
+    SCRIPT=
+    ACTION=
+    lastaction=
+    firstaction=
+    INCLUDED=
+    if [ -s "$NEWtmpFILE" ]; then
+      while read line; do
+        nline=$[ nline + 1 ]
+        to_skip "$line"
+        if [ $? -eq 1 ]; then
+          continue
+        fi
+        ltrim "$line" line
+        if [ ! -z "$SCRIPT" ] && [ "$line" != "endscript" ]; then 
+          continue
+        fi
+        if [ ! -z "$ACTION" ] && [ "$line" != "endaction" ]; then
+          continue
+        fi
+        if [ -z "$OPEN_BRACKET" ]; then
+          if [ $(expr "$line" : ".*{\|include *") -eq 0 ]; then
+            syn_error $nline "$line" "Invalid syntax"
+            ERROR=1
+            break
+          fi
+          if [ $(expr "$line" : "include *") -eq 8 ]; then
+            # Prevent multiple inclusions
+            #echo "Here INCLUDED=$INCLUDED"
+            if [ ! -z "$INCLUDED" ]; then
+              syn_error $nline "$line" "No more than one inclusion is allowed!"
+              ERROR=1
+              break
+            fi
+            # Search for include files
+            FILES="${line:8}"
+            OLDIFS="$IFS"
+            IFS=","
+            set -f
+            for i in $FILES; do
+              #echo "i=$i"
+              rtrim "$i" i
+              check_wildcard "$i"
+              if [ $? -ne 0 ]; then
+                break
+              fi
+              #if [ $(expr index "$i" "\*" ) -ne 0 ]; then
+                local incf=
+                IFS="$OLDIFS"
+                #echo "Now i=$i"
+                set +f
+                for incf in $i; do
+                  # check syntax of included file
+                  if [ ! -r "$incf" ]; then
+                     syn_error $nline "$line" \
+                       "Included file $incf is not readable or does not exists"
+                     ERROR=1
+                     break 2
+                  fi
+                  INCLUDED="$INCLUDED $incf"
+                  #echo "after add INCLUDED=$INCLUDED"
+                done
+                IFS=","
+              #fi
+            done
+            set +f
+            IFS="$OLDIFS"
+            continue
+          fi
+          if [ $(expr "$line" : ".*{") -ne 0 ]; then
+            OPEN_BRACKET=1
+            FILES=$(echo "$line"|cut -d'{' -f1)
+            OLDIFS="$IFS"
+            IFS=","
+            set -f
+            for i in $FILES; do
+              rtrim "$i" i
+              check_wildcard "$i"
+              if [ $? -ne 0 ]; then
+                break
+              fi
+              set +f
+              if [ $(expr index "$i" "\*" ) -ne 0 ]; then
+                # wildcard files
+                wild_files=$(/bin/ls -1 $i 2>/dev/null)
+                if [ -z "$wild_files" ]; then
+                  echo "WARNING: None of specified logfiles with * exists or is readable"
+                fi
+              else
+                if [ ! -r "$i" ]; then
+                  echo "WARNING: Logfile is not readable or does not exists"
+                  echo "> $i"
+                fi
+              fi
+              count_metapos "$i"
+            done
+            set +f
+            IFS="$OLDIFS"
+            echo
+            echo "Checking syntax for $i"
+            continue
+          fi
+        fi
+        if [ "$line" = "}" ]; then 
+          OPEN_BRACKET=
+          ERROR=
+          SCRIPT=
+          ACTION=
+          lastaction=
+          firstaction=
+          continue
+        fi
+        KEY=$(echo "$line"|cut -d' ' -f1)
+        VALUE=$(echo "$line"|cut -d' ' -f2-)
+        [ "$KEY" = "$VALUE" ] && VALUE=
+
+        if [ $(expr "$KEY1P_custom" : ".*|$KEY|.*") -ne 0 ] && \
+           [ $1 != "$CUSTOMRC" ] && [ "$2" != "$CUSTOMRC" ]; then
+           syn_error $nline "$line" "$KEY can be used only in custom file!"
+           ERROR=1
+           break
+        fi
+  
+        if [ $(expr "$KEY0P|$KEY1P|$KEY2P|$KEY3P|$KEY1P_custom" : ".*|$KEY|.*") -eq 0 ]; then
+          syn_error $nline "$line" "Unknown keyword"
+          ERROR=1
+          break
+        fi
+        if [ -z "$VALUE" ] && [ $(expr "$KEY0P" : ".*|$KEY|.*") -eq 0 ]; then
+          syn_error $nline "$line" "Syntax error"
+          ERROR=1
+          break
+        fi
+        if [ ! -z "$VALUE" ] && \
+           [ $(expr "$KEY1P|$KEY2P|$KEY3P|$KEY1P_custom" : ".*|$KEY|.*") -eq 0 ]; then
+          syn_error $nline "$line" "Syntax error"
+          ERROR=1
+          break
+        fi
+        case "$KEY" in
+          storedir|storefile|prerotate|postrotate)
+            META_OK=1
+            # comincio con sostituire tutte le metavariabili conosciute.
+            # se rimane una @ provo a sostituire \\\\@
+            # se la @ rimane ancora è una parola sconosciuta.
+            echo "Checking for meta-variables..."
+
+            # Conto quanti token ci sono nel path del log da ruotare, e faccio
+            # un ciclo per aggiungere a METAK @1|...@numerotoken
+            METAK_num=$METAK
+            mm=0
+            while [ $mm -le $num_metapos ]; do
+              METAK_num="$METAK_num|$mm"
+              mm=$[ mm + 1 ]
+            done
+            METAK_num="$METAK_num|"
+
+            if [ $(expr "$VALUE" : ".*\@.*") -ne 0 ]; then
+              mkey="$VALUE"
+              OLDIFS="$IFS"
+              IFS="|"
+              for k in $METAK_num; do
+                if [ ! -z "$k" ]; then
+                  mkey=${mkey//\@$k/}
+                fi
+              done
+              IFS="$OLDIFS"
+            fi
+            if [ $(expr "$mkey" : ".*\@.*") -ne 0 ]; then
+              # Try to substitute protected by \@:
+              mkey=${mkey//\\\\@/}
+            fi
+            if [ $(expr "$mkey" : ".*\@.*") -ne 0 ]; then
+              syn_error $nline "$line" "Unknown meta-variable!!"
+              ERROR=1
+              break
+            fi
+            ;;
+        esac
+        if [ "$line" = "prerotate" ] || [ "$line" = "postrotate" ]; then
+          SCRIPT=1
+        fi
+        if [ "$line" = "firstaction" ] || [ "$line" = "lastaction" ]; then
+          if [ ! -z "$(eval echo \$$line)" ]; then
+            syn_error $nline "Multiple $line detected. Must be used only one"
+            ERROR=1
+            break
+          fi
+          ACTION=$nline
+          eval $line=1
+        fi
+        if [ "$line" = "endscript" ]; then 
+          SCRIPT=
+        fi
+        if [ "$line" = "endaction" ]; then
+          if [ $[ nline - ACTION ] -ne 2 ]; then
+            syn_error $nline "Actions must be only one command line"
+            ERROR=1
+            break
+          fi
+          ACTION=
+        fi
+
+      done<$NEWtmpFILE
+    fi
+    if [ -z "$ERROR" ]; then
+      esci=1
+    fi
+  done
+  echo "Done."
+  install_rc "$1"
+}
+
+install_rc () {
+  if [ -s "$NEWtmpFILE" ]; then 
+    echo "Installing new configuration file in $1..."
+    cp -f $NEWtmpFILE "$1"
+    chmod 0600 "$1"
+    echo "Done."
+  else
+    rm -f "$1"
+  fi 
+}
+
+##############################################################################
+# MAIN 
+##############################################################################
+
+if [ ! -z "$VISUAL" ]; then
+  ED=$VISUAL
+elif [ ! -z "$EDITOR" ]; then
+  ED=$EDITOR
+else
+  ED=vi
+fi
+
+
+PRGNAME="$(basename $0)"
+case "$PRGNAME" in
+  virottrc) 
+               check_rc 
+               ;;
+  virottmonth)
+               what="$MONTRC"
+               #check_mdy "$MONTRC"
+               ;;
+  virottweek)
+               what="$WEEKRC"
+               #check_mdy "$WEEKRC"
+               ;;
+  virottday)
+               what="$DAYRC"
+               #check_mdy "$DAYRC" 
+               ;;
+  virottcustom)
+               what="$CUSTOMRC"
+               ;;
+  *)
+               echo "Program name error!"
+               exit 3
+               ;;
+esac
+
+check_mdy "$what"
+
+if [ ! -z "$INCLUDED" ]; then
+  for i in $INCLUDED; do
+    while [ -z "$SKIP" ]; do
+      echo "---------------------------------------------------------------"
+      echo "Checking syntax for included file $i"
+      echo "Press:"
+      echo "ENTER to edit file"
+      echo "S to skip this file"
+      #echo "A to skip all files"
+      echo "CTRL+C or Q to break at this point"
+      read choice
+      case "$choice" in
+        "")
+          check_mdy "$i" "$what"
+          break
+          ;;
+        S|s)
+          break
+          ;;
+        # It is useful??
+        #A|a)
+        #  for j in $INCLUDED; do
+        #    install_rc "$j"
+        #  done
+        #  SKIP=1
+        #  break
+        #  ;;
+        Q|q)
+          exit
+          ;;
+        *)
+          echo "Option not recognized"
+          ;;
+      esac
+    done
+  done
+fi
+echo "Check finished."
+echo

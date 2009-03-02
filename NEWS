@@ -1,0 +1,6 @@
+GNU Rot[t]log NEWS--history of user-visible changes.
+
+This file is about changes in Rot[t]log 0.71.1 from 0.71.
+
+* Rotate only /var/log/messages and do not compress logs.
+* /var/log, not /var/backup, is used for rc configuration file.
