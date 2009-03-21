@@ -1,7 +1,8 @@
-#!/bin/bash
-# Copyright (C) 2001, 2002, 2003, 2004, 2005 by 
+#!/bin/bash     -*- shell-script -*-
+# GNU Rot[t]log
+# Copyright 2001, 2002, 2003, 2004, 2005 by 
 #   Stefano Falsetto <falsetto@gnu.org>
-# Copyright (C) 2008, 2009 by D E Evans <sinuhe@gnu.org>
+# Copyright 2008, 2009 by D E Evans <sinuhe@gnu.org>
 #
 # This program is free software.  You can redistribute it, or modify it,
 # or both, under the terms of the GNU General Public License version 3
@@ -91,6 +92,202 @@ BREAK_CYCLE=255
 
 # Define functions
 #
+banner() {
+ echo "This is GNU Rot[t]log ver $VERSION"
+ echo "Copyright 2001, 2002, 2003, 2004, 2005 by"
+ echo " Stefano Falsetto <falsetto@gnu.org>"
+ echo "Copyright 2008, 2009 David Egan Evans" <sinuhe@gnu.org>
+ echo "GNU Rot[t]log comes with ABSOLUTELY NO WARRANTY"
+ if [ -z $1 ]; then
+  return
+ fi
+ echo
+ echo "This program is free software.  You can redistribute it, or modify it,"
+ echo "or both, under the terms of the GNU General Public License version 3"
+ echo "(or any later version) as published by the Free Software Foundation."
+ echo
+ echo "This program is distributed in the hope that it will be useful,"
+ echo "WITHOUT ANY WARRANTY; without even the implied warranty of"
+ echo "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU"
+ echo "General Public License for more details."
+ echo
+ echo "You should have received a copy of the GNU General Public License"
+ echo "along with this program.  If not, see <http://www.gnu.org/licenses>."
+ echo
+}
+
+checkitem () {
+ if [ $(expr " $1 " : ".* $2 .*") -eq 0 ]; then
+  echo "Error in bound definition. Token: $2"
+  USCITA=$E_BAD_RANGE
+  exit $USCITA
+ fi
+}
+
+checkrc () {
+ while [ $# -ne 0 ]; do
+  echo "==========================================================================="
+  if [ "$1" = "main" ]; then
+   echo "Check for main configuration file done."
+  elif [ ! -e $MAINDIR/$1 ]; then
+   echo "WARNING: $1 file doesn't exist!"
+  else
+   echo "Checking $1 configuration file..."
+   quale=$1
+   DISABLE_SCRIPT=1
+   read_and_do /bin/true
+   echo "Done."
+  fi
+  shift
+ done
+}
+
+collate_logfiles () {
+ local logname="$(basename $1)"
+ local arch_file="$2"
+ (
+  . $TMPROTTCOLLECT.$logname
+  expand_metavar "$COLLECT_LOG" "$COLLECT_ARCDIR"
+  pcdpc="$expanded_metavars"
+
+  # trick: special metavar-expansion
+  COLLECT_ARCFIL="${COLLECT_ARCFIL//\@NEXT_EXT/*}"
+  COLLECT_ARCFIL="${COLLECT_ARCFIL//\@FILENAME/@BASENAME.*}"
+  expand_metavar "$pcdpc" "$COLLECT_ARCFIL"
+  storefile="$pcdpc/$expanded_metavars"
+  storefile=${storefile//\/\//\/}
+
+  FILES=$(ls -1tr $storefile 2>/dev/null)
+  if [ -z "$FILES" ]; then
+   if [ $nomissingok -eq 0 ]; then
+    debecho "collate_logfiles: No file to collate!"
+    return
+   else
+    echo "Can't find file to collate!"
+    USCITA=$E_NO_FILE_TO_COLLATE
+    exit $USCITA
+   fi
+  fi
+
+  #NFILES=$(echo "$FILES"|wc -l)
+  #>$arch_file
+  TOBEPACK="$(grep "^$1=.*" $DELAYED_FILES 2>/dev/null|cut -d'=' -f2-)"
+  if [ -z "$TOBEPACK" ]; then
+   if [ ! -z "$COLLECT_DELAY" ]; then
+    echo "Delayed logfile is not in control file"
+    USCITA=$E_NOT_IN_DELAY
+    exit $USCITA
+   else
+    TOBEPACK=" "
+   fi
+  fi
+  count=1
+
+  case $COLLATE in
+   tar)
+   #Shipped in 0.30alpha. It works
+   #debecho "Performing TARCOLLATE"
+   #arch_file="$arch_file.tar.$extension"
+   #tar c --use-compress-program $packer -f "$arch_file" $FILES
+   #------------------------------
+   debecho "collate_logfiles: Performing TARCOLLATE"
+   MAKETREE=
+   for f in $FILES; do
+    if [ -z "$MAKETREE" ]; then
+     MAKETREE="$TEMPDIR/tarcollect/$(dirname "$f")"
+     debecho "collate_logfiles: Make tree=$MAKETREE"
+     copy_tree $(dirname "$f") "$TEMPDIR/tarcollect/"
+     #mkdir -p $MAKETREE
+    fi
+    if [ -z "$COLLECT_NOCOMPRESS" ]; then
+     cp -pf "$f" $MAKETREE
+     debecho "collate_logfiles: Copied $f in $MAKETREE"
+     continue
+    fi
+    #if [ ! -z "$COLLECT_DELAY" ] && \
+    #   [ ! -z $(grep "^.*=$f" $DELAYED_FILES 2>/dev/null) ]; then
+    if [ ! -z "$COLLECT_DELAY" ] && [ "$TOBEPACK" = "$f" ]; then
+     debecho "collate_logfiles: Compressing $f in $MAKETREE/$(basename "$f")"
+     $packer $compress "$f" > $MAKETREE/$(basename "$f")
+     eval "count_${COLLECT_QUALE}=$[ count_${COLLECT_QUALE} + 1 ]"
+    else
+     cp -pf "$f" $MAKETREE
+     debecho "collate_logfiles: Copied $f in $MAKETREE"
+     eval "count_${COLLECT_QUALE}=$[ count_${COLLECT_QUALE} + 1 ]"
+    fi
+   done
+   arch_file="$arch_file.tar.$extension"
+   OLD_PWD="$PWD"
+   cd "$TEMPDIR/tarcollect"
+   cd ${packdir:1} 2>/dev/null
+   debecho "collate_logfiles: Now PWD=$PWD"
+   #tar c --use-compress-program $packer -f "$arch_file" *
+   # It's more portable:
+   tar cf - *|$packer >"$arch_file"
+   eval "count_$quale=$[ count_$quale + 1 ]"
+   cd $OLD_PWD
+   debecho "collate_logfiles: After tar and cd, PWD=$PWD"
+   ;;
+   *)
+   debecho "collate_logfiles: Performing COLLATE"
+   for f in $FILES; do
+    #if [ ! -z "$COLLECT_DELAY" ] && \
+    #   [ ! -z $(grep "^.*=$f" $DELAYED_FILES 2>/dev/null) ]; then
+    if [ ! -z "$COLLECT_DELAY" ] && [ "$TOBEPACK" = "$f" ]; then
+     cat "$f" >>$TMP_ARCH_FILE
+    elif [ -z "$COLLECT_NOCOMPRESS" ]; then
+     cp -p "$f" $TEMP_TARCOLL.$count.$extension
+     $unpacker $uncompress "$TEMP_TARCOLL.$count.$extension" >>$TMP_ARCH_FILE
+     eval "count_${COLLECT_QUALE}=$[ count_${COLLECT_QUALE} + 1 ]"
+    else
+     cat "$f" >>$TMP_ARCH_FILE
+     eval "count_${COLLECT_QUALE}=$[ count_${COLLECT_QUALE} + 1 ]"
+    fi
+    count=$[ count + 1 ]
+   done
+   debecho "collate_logfiles: Compressing collection file..."
+   $packer $compress "$TMP_ARCH_FILE">"$arch_file.$extension"
+   if [ $? -ne 0 ]; then
+    echo "Error in compress collected files!"
+    return $E_CANT_COMPRESS
+   fi
+   eval "count_$quale=$[ count_$quale + 1 ]"
+   ;;
+  esac
+  rm -f $TMPROTTCOLLECT.$logname
+ )
+}
+
+collect_log_info () {
+ local p=$2
+ local find="$1"
+
+ for find in ${pcldr[@]}; do
+  debecho "collect_log_info: Searching for matching logfile in ${pcldr[@]}"
+  if [ "$find" = "$1" ]; then
+   debecho "collect_log_info: Found matching logfile $find"
+   if [ -z "$ROTATE" ] || [ $ROTATE -ne $p ]; then
+    echo "Invalid rotate period for collate link"
+    return $E_BAD_PERIOD
+   fi
+   local tmpf="$TMPROTTCOLLECT.$(basename $find)"
+   make_storefile "$find"
+   echo "COLLECT_LOG=$find" 				 >$tmpf
+   echo "COLLECT_ARCDIR=$pcdpc" 			>>$tmpf
+   if [ ! -z "$param_storefile" ]; then
+    echo "COLLECT_ARCFIL=$param_storefile" 		>>$tmpf
+   else
+    echo "COLLECT_ARCFIL=@BASENAME.@NEXT_EXT"	>>$tmpf
+   fi
+   echo "COLLECT_DELAY=$DELAY" 			>>$tmpf
+   echo "COLLECT_NOCOMPRESS=$NOCOMPRESS" 		>>$tmpf
+   echo "COLLECT_PERIOD=$p" 				>>$tmpf
+   echo "COLLECT_QUALE=$3"				>>$tmpf
+  fi
+  return $BREAK_CYCLE
+ done
+}
+
 cp_mod_own () {
  if [ -z "$follow_symlinks" ]; then
   local lsdir=$(ls -ld "$1"|tr -s ' ')
@@ -388,6 +585,86 @@ do_rotate() {
  fi
 }
 
+is_readable() {
+ debecho "is_readable: Checking for $1"
+ if [ ! -r "$1" ]; then
+  debecho "is_readable: nomissingok=$nomissingok"
+  if [ "$nomissingok" -ne 0 ] && [ "$2" != "log" ]; then
+   debecho "Missing? OK!"
+   return 1
+  else
+   echo "ERROR: Couldn't read $2 file!"
+   echo "Filename: $1"
+   USCITA=$E_FILE_NOREAD
+   exit $USCITA
+  fi
+ fi
+ if [ -L "$1" ] && [ $follow_symlinks -eq 0 ]; then
+  echo "Can't follow symbolic links!"
+  echo "Filename: $1"
+  USCITA=$E_SYMLINK
+  exit $USCITA
+ fi
+}
+
+is_taboo() {
+ local taboo
+ local tt
+ local extf
+
+ for taboo in $TABOO_EXT; do
+  debecho "Checking if $1 ends with taboo extension $taboo"
+  #if [ $(basename "$1" $taboo) != "$1" ]; then
+  # Speed up:
+  if [ "${1%$taboo}" != "$1" ]; then
+   debecho "File $1 has a taboo extension!"
+   return 1
+  fi
+ done
+ return 0
+}
+
+is_quoted() {
+ if [ $(expr index "$1" "\"" ) -eq 0 ]; then
+  f=${1// /}
+ else
+  f=${1//\"/}
+ fi
+}
+
+is_wildcard() {
+ local filna="$1"
+
+ filna=${filna//\\\\[/}
+ filna=${filna//\\\\]/}
+ filna=${filna//\\\\{/}
+ filna=${filna//\\\}/}
+ filna=${filna//\\\\?/}
+ filna=${filna//\\\\\\*}
+
+ case "$filna" in
+  *\]*|*\[*|*\{*|*\}*|*\?*)
+   echo "Only * wildcard can be used!"
+   USCITA=$E_BAD_WILDCARD
+   exit $USCITA
+   ;;
+ esac
+
+ if [ $(expr index "$filna" "\*" ) -eq 0 ]; then
+  debecho "is_wildcard: No wildcard in this filename"
+  return 0
+ else
+  if [ $follow_symlinks -eq 0 ]; then
+   wild_filenames=$(find $filna -maxdepth $MAXDEPTH -type f 2>/dev/null)
+  else
+   wild_filenames=$(find $filna -maxdepth $MAXDEPTH -type f -o -type l 2>/dev/null)
+  fi
+  debecho "is_wildcard: Found * in filename. Follows found files:"
+  debecho "is_wildcard: $wild_filenames"
+  return 1
+ fi
+}
+
 lastnum () {
  [ -z "$2" ] && local add=0 || local add=$2
  local crit=$1
@@ -447,6 +724,29 @@ lastnum () {
  fi
  debecho "lastnum: returning $lastnum"
  return $lastnum
+}
+
+make_metapos() {
+ local path="$1"
+ local startt=0
+ local endt=0
+ local countt=0
+ local pos=0
+ while [ $startt -lt ${#path} ]; do
+  if [ "${path:startt:1}" = "/" ]; then
+   startt=$[ startt + 1 ]
+  fi
+  endt=$startt
+  while [ $endt -lt ${#path} ] && [ "${path:endt:1}" != "/" ]; do
+   endt=$[ endt + 1 ]
+   countt=$[ countt + 1 ]
+  done
+  endt=$[ endt -  1 ]
+  meta_pos[$pos]="${path:startt:countt}"
+  pos=$[ pos + 1 ]
+  startt=$[ endt + 1 ]
+  countt=0
+ done
 }
 
 make_tmpdir () {
@@ -959,254 +1259,65 @@ setup_vars () {
  # TODO: add mailopt_* ??
 }
 
-
-collate_logfiles () {
-  local logname="$(basename $1)"
-  local arch_file="$2"
-  (
-    . $TMPROTTCOLLECT.$logname
-    expand_metavar "$COLLECT_LOG" "$COLLECT_ARCDIR"
-    pcdpc="$expanded_metavars"
-
-    # trick: special metavar-expansion
-    COLLECT_ARCFIL="${COLLECT_ARCFIL//\@NEXT_EXT/*}"
-    COLLECT_ARCFIL="${COLLECT_ARCFIL//\@FILENAME/@BASENAME.*}"
-    expand_metavar "$pcdpc" "$COLLECT_ARCFIL"
-    storefile="$pcdpc/$expanded_metavars"
-    storefile=${storefile//\/\//\/}
-
-    FILES=$(ls -1tr $storefile 2>/dev/null)
-    if [ -z "$FILES" ]; then
-      if [ $nomissingok -eq 0 ]; then
-        debecho "collate_logfiles: No file to collate!"
-        return
-      else
-        echo "Can't find file to collate!"
-        USCITA=$E_NO_FILE_TO_COLLATE
-        exit $USCITA
-      fi
-    fi
-    #NFILES=$(echo "$FILES"|wc -l)
-    #>$arch_file
-    TOBEPACK="$(grep "^$1=.*" $DELAYED_FILES 2>/dev/null|cut -d'=' -f2-)"
-    if [ -z "$TOBEPACK" ]; then
-      if [ ! -z "$COLLECT_DELAY" ]; then
-        echo "Delayed logfile is not in control file"
-        USCITA=$E_NOT_IN_DELAY
-        exit $USCITA
-      else
-        TOBEPACK=" "
-      fi
-    fi
-    count=1
-    case $COLLATE in
-      tar)
-      #Shipped in 0.30alpha. It works
-      #debecho "Performing TARCOLLATE"
-      #arch_file="$arch_file.tar.$extension"
-      #tar c --use-compress-program $packer -f "$arch_file" $FILES
-      #------------------------------
-      debecho "collate_logfiles: Performing TARCOLLATE"
-      MAKETREE=
-      for f in $FILES; do
-        if [ -z "$MAKETREE" ]; then
-          MAKETREE="$TEMPDIR/tarcollect/$(dirname "$f")"
-          debecho "collate_logfiles: Make tree=$MAKETREE"
-          copy_tree $(dirname "$f") "$TEMPDIR/tarcollect/"
-          #mkdir -p $MAKETREE
-        fi
-        if [ -z "$COLLECT_NOCOMPRESS" ]; then
-          cp -pf "$f" $MAKETREE
-          debecho "collate_logfiles: Copied $f in $MAKETREE"
-          continue
-        fi
-
-        #if [ ! -z "$COLLECT_DELAY" ] && \
-        #   [ ! -z $(grep "^.*=$f" $DELAYED_FILES 2>/dev/null) ]; then
-        if [ ! -z "$COLLECT_DELAY" ] && [ "$TOBEPACK" = "$f" ]; then
-          debecho "collate_logfiles: Compressing $f in $MAKETREE/$(basename "$f")"
-          $packer $compress "$f" > $MAKETREE/$(basename "$f")
-          eval "count_${COLLECT_QUALE}=$[ count_${COLLECT_QUALE} + 1 ]"
-        else
-          cp -pf "$f" $MAKETREE
-          debecho "collate_logfiles: Copied $f in $MAKETREE"
-          eval "count_${COLLECT_QUALE}=$[ count_${COLLECT_QUALE} + 1 ]"
-        fi
-      done
-      arch_file="$arch_file.tar.$extension"
-      OLD_PWD="$PWD"
-      cd "$TEMPDIR/tarcollect"
-      cd ${packdir:1} 2>/dev/null
-      debecho "collate_logfiles: Now PWD=$PWD"
-      #tar c --use-compress-program $packer -f "$arch_file" *
-      # It's more portable:
-      tar cf - *|$packer >"$arch_file"
-      eval "count_$quale=$[ count_$quale + 1 ]"
-      cd $OLD_PWD
-      debecho "collate_logfiles: After tar and cd, PWD=$PWD"
-      ;;
-      *)
-      debecho "collate_logfiles: Performing COLLATE"
-      for f in $FILES; do
-        #if [ ! -z "$COLLECT_DELAY" ] && \
-        #   [ ! -z $(grep "^.*=$f" $DELAYED_FILES 2>/dev/null) ]; then
-        if [ ! -z "$COLLECT_DELAY" ] && [ "$TOBEPACK" = "$f" ]; then
-          cat "$f" >>$TMP_ARCH_FILE
-        elif [ -z "$COLLECT_NOCOMPRESS" ]; then
-          cp -p "$f" $TEMP_TARCOLL.$count.$extension
-          $unpacker $uncompress "$TEMP_TARCOLL.$count.$extension" >>$TMP_ARCH_FILE
-          eval "count_${COLLECT_QUALE}=$[ count_${COLLECT_QUALE} + 1 ]"
-        else
-          cat "$f" >>$TMP_ARCH_FILE
-          eval "count_${COLLECT_QUALE}=$[ count_${COLLECT_QUALE} + 1 ]"
-        fi
-        count=$[ count + 1 ]
-      done
-      debecho "collate_logfiles: Compressing collection file..."
-      $packer $compress "$TMP_ARCH_FILE">"$arch_file.$extension"
-      if [ $? -ne 0 ]; then
-        echo "Error in compress collected files!"
-        return $E_CANT_COMPRESS
-      fi
-      eval "count_$quale=$[ count_$quale + 1 ]"
-      ;;
-    esac
-    rm -f $TMPROTTCOLLECT.$logname
-    )
-}
-
-collect_log_info () {
-  local p=$2
-  local find="$1"
-
-  for find in ${pcldr[@]}; do
-    debecho "collect_log_info: Searching for matching logfile in ${pcldr[@]}"
-    if [ "$find" = "$1" ]; then
-      debecho "collect_log_info: Found matching logfile $find"
-      if [ -z "$ROTATE" ] || [ $ROTATE -ne $p ]; then
-        echo "Invalid rotate period for collate link"
-        return $E_BAD_PERIOD
-      fi
-      local tmpf="$TMPROTTCOLLECT.$(basename $find)"
-      make_storefile "$find"
-      echo "COLLECT_LOG=$find" 				 >$tmpf
-      echo "COLLECT_ARCDIR=$pcdpc" 			>>$tmpf
-      if [ ! -z "$param_storefile" ]; then
-        echo "COLLECT_ARCFIL=$param_storefile" 		>>$tmpf
-      else
-        echo "COLLECT_ARCFIL=@BASENAME.@NEXT_EXT"	>>$tmpf
-      fi
-      echo "COLLECT_DELAY=$DELAY" 			>>$tmpf
-      echo "COLLECT_NOCOMPRESS=$NOCOMPRESS" 		>>$tmpf
-      echo "COLLECT_PERIOD=$p" 				>>$tmpf
-      echo "COLLECT_QUALE=$3"				>>$tmpf
-    fi
-    return $BREAK_CYCLE
-  done
-}
-
-is_readable() {
-  debecho "is_readable: Checking for $1"
-  if [ ! -r "$1" ]; then
-    debecho "is_readable: nomissingok=$nomissingok"
-    if [ "$nomissingok" -ne 0 ] && [ "$2" != "log" ]; then
-      debecho "Missing? OK!"
-      return 1
-    else
-      echo "ERROR: Couldn't read $2 file!"
-      echo "Filename: $1"
-      USCITA=$E_FILE_NOREAD
-      exit $USCITA
-   fi
+summarize_loginfo () {
+ # Cycle between daily, weekly, monthly, and custom
+ # quando trovo il file in uno di questi tre visualizzo le info ed esco
+ for quale in custom daily weekly monthly; do
+  if [ -e $MAINDIR/$quale ]; then
+   debecho "summarize_loginfo: Searching in $quale conffile"
+   read_and_do findlog "$1"
   fi
-  if [ -L "$1" ] && [ $follow_symlinks -eq 0 ]; then
-    echo "Can't follow symbolic links!"
-    echo "Filename: $1"
-    USCITA=$E_SYMLINK
-    exit $USCITA
-  fi
+ done
 }
 
-is_quoted() {
-  if [ $(expr index "$1" "\"" ) -eq 0 ]; then
-    f=${1// /}
-  else
-    f=${1//\"/}
-  fi
+syntax () {
+ banner
+ echo
+ echo "Syntax: rottlog <options>"
+ echo "  --help, -h"
+ echo "    Display this page and exit"
+ echo "  --version, -V"
+ echo "    Display version, disclaimer and exit"
+ echo "  --defaults"
+ echo "    Display default values and exit"
+ echo " --showlog <logfile>, -s <logfile>"
+ echo "    Show with a pager (un)compressed archived logs"
+ echo " --pager <program>"
+ echo "    Use <program> for paging output of showlog"
+ echo " --summary <logfile>"
+ echo "    Display a summary of some useful information about <logfile>"
+ echo " --checkrc <what>,<what>,..."
+ echo "    Check for syntax of specified configuration file(s)"
+ echo "    <what> must be one of: daily, weekly, monthly, custom, all"
+ echo " --force [<what>]"
+ echo "    Force rotation/archiving of all entries in <what> config file"
+ echo "    and subsequent period-related config files."
+ echo "    <what> must be one of: daily, weekly, monthly"
+ echo "    Rotation/archiving of all logfiles will be forced if <what>"
+ echo "    is not used."
+ echo " --forceonly [<what>]"
+ echo "    Force rotation/archiving of all entries only in <what> config" 
+ echo "    file. See --force option for more information."
+ echo " --debug"
+ echo "    Let rottlog be verbose."
+ echo
 }
 
-is_wildcard() {
-  local filna="$1"
-
-  filna=${filna//\\\\[/}
-  filna=${filna//\\\\]/}
-  filna=${filna//\\\\{/}
-  filna=${filna//\\\}/}
-  filna=${filna//\\\\?/}
-  filna=${filna//\\\\\\*}
-
-  case "$filna" in
-    *\]*|*\[*|*\{*|*\}*|*\?*)
-        echo "Only * wildcard can be used!"
-        USCITA=$E_BAD_WILDCARD
-        exit $USCITA
-        ;;
-  esac
-
-  if [ $(expr index "$filna" "\*" ) -eq 0 ]; then
-    debecho "is_wildcard: No wildcard in this filename"
-    return 0
-  else
-    if [ $follow_symlinks -eq 0 ]; then
-      wild_filenames=$(find $filna -maxdepth $MAXDEPTH -type f 2>/dev/null)
-    else
-      wild_filenames=$(find $filna -maxdepth $MAXDEPTH -type f -o -type l 2>/dev/null)
-    fi
-    debecho "is_wildcard: Found * in filename. Follows found files:"
-    debecho "is_wildcard: $wild_filenames"
-    return 1
-  fi
+update_stamp() {
+ local NameOfCtrlFile="$STATDIR/.${log//\//_}.rtt"
+ debecho "update_stamp: Updating $NameOfCtrlFile file"
+ echo "stamp:$stamp_now"  >$NameOfCtrlFile
+ echo "date:$date_now"   >>$NameOfCtrlFile
+ echo "size:$size_b"     >>$NameOfCtrlFile
+ if [ ! -z "$1" ]; then
+  echo "partial:$1"  >>$NameOfCtrlFile
+ fi
+ if [ ! -f "$NameOfCtrlFile" ]; then
+  debecho "update_stamp: Can't write control file!"
+  debecho "update_stamp: Disk full or permission denied!"
+ fi
 }
 
-is_taboo() {
-  local taboo
-  local tt
-  local extf
-
-  for taboo in $TABOO_EXT; do
-    debecho "Checking if $1 ends with taboo extension $taboo"
-    #if [ $(basename "$1" $taboo) != "$1" ]; then
-    # Speed up:
-    if [ "${1%$taboo}" != "$1" ]; then
-      debecho "File $1 has a taboo extension!"
-      return 1
-    fi
-  done
-  return 0
-}
-
-make_metapos() {
-  local path="$1"
-  local startt=0
-  local endt=0
-  local countt=0
-  local pos=0
-  while [ $startt -lt ${#path} ]; do
-    if [ "${path:startt:1}" = "/" ]; then
-      startt=$[ startt + 1 ]
-    fi
-    endt=$startt
-    while [ $endt -lt ${#path} ] && [ "${path:endt:1}" != "/" ]; do
-      endt=$[ endt + 1 ]
-      countt=$[ countt + 1 ]
-    done
-    endt=$[ endt -  1 ]
-    meta_pos[$pos]="${path:startt:countt}"
-    pos=$[ pos + 1 ]
-    startt=$[ endt + 1 ]
-    countt=0
-  done
-}
 
 expand_metavar() {
   # If used two parameters:
@@ -1509,22 +1620,6 @@ fill_timevar () {
   ldom=$(cal |tail -n 2|head -n 1|rev|cut -d' ' -f1|rev)
 }
 
-update_stamp() {
-    local NameOfCtrlFile="$STATDIR/.${log//\//_}.rtt"
-    
-    debecho "update_stamp: Updating $NameOfCtrlFile file"
-    echo "stamp:$stamp_now"  >$NameOfCtrlFile
-    echo "date:$date_now"   >>$NameOfCtrlFile
-    echo "size:$size_b"     >>$NameOfCtrlFile
-    if [ ! -z "$1" ]; then
-      echo "partial:$1"  >>$NameOfCtrlFile
-    fi
-    if [ ! -f "$NameOfCtrlFile" ]; then
-      debecho "update_stamp: Can't write control file!"
-      debecho "update_stamp: Disk full or permission denied!"
-    fi
-}
-
 get_control_info () {
   local NameOfCtrlFile="$STATDIR/.${log//\//_}.rtt"
   
@@ -1539,7 +1634,6 @@ get_control_info () {
       USCITA=$E_INTERNAL
       exit $USCITA
   esac
-  
 }
 
 check_mwd () {
@@ -1576,14 +1670,6 @@ check_mwd () {
     crit="$crit && [ $stamp_now -ge $check_p ]"
   else
     crit="$crit && [ $stamp_now -lt $check_p ]"
-  fi
-}
-
-checkitem () {
-  if [ $(expr " $1 " : ".* $2 .*") -eq 0 ]; then
-    echo "Error in bound definition. Token: $2"
-    USCITA=$E_BAD_RANGE
-    exit $USCITA
   fi
 }
 
@@ -2949,58 +3035,6 @@ read_weekly() {
 
 }
 
-banner() {
-  echo "This is GNU Rot[t]log ver $VERSION"
-  echo "Copyright (C) 2001, 2002 by Stefano Falsetto"
-  echo "Copyright (C) 2008 D E Evans"
-  echo "GNU Rot[t]log comes with ABSOLUTELY NO WARRANTY"
-
-  if [ -z $1 ]; then
-    return
-  fi
-  echo
-  echo "This is free software, and you are welcome to redistribute it"
-  echo "under certain conditions; This program is distributed in the"
-  echo "hope that it will be useful, but WITHOUT ANY WARRANTY; without"
-  echo "even the implied warranty of MERCHANTABILITY or FITNESS FOR A"
-  echo "PARTICULAR PURPOSE. See the GNU General Public License"
-  echo "for more details."
-  echo
-}
-
-syntax () {
-  banner
-  echo
-  echo "Syntax: rottlog <options>"
-  echo "  --help, -h"
-  echo "    Display this page and exit"
-  echo "  --version, -V"
-  echo "    Display version, disclaimer and exit"
-  echo "  --defaults"
-  echo "    Display default values and exit"
-  echo " --showlog <logfile>, -s <logfile>"
-  echo "    Show with a pager (un)compressed archived logs"
-  echo " --pager <program>"
-  echo "    Use <program> for paging output of showlog"
-  echo " --summary <logfile>"
-  echo "    Display a summary of some useful information about <logfile>"
-  echo " --checkrc <what>,<what>,..."
-  echo "    Check for syntax of specified configuration file(s)"
-  echo "    <what> must be one of: daily, weekly, monthly, custom, all"
-  echo " --force [<what>]"
-  echo "    Force rotation/archiving of all entries in <what> config file"
-  echo "    and subsequent period-related config files."
-  echo "    <what> must be one of: daily, weekly, monthly"
-  echo "    Rotation/archiving of all logfiles will be forced if <what>"
-  echo "    is not used."
-  echo " --forceonly [<what>]"
-  echo "    Force rotation/archiving of all entries only in <what> config" 
-  echo "    file. See --force option for more information."
-  echo " --debug"
-  echo "    Let rottlog be verbose."
-  echo
-}
-
 show_defaults () {
   local VARS="VERSION MAINDIR MAINRC STATDIR DELAYED_FILES DATE_OFFSET \
               BASE_TMP_DIR DEBUG mail pager follow_symlinks dir_own dir_grp 
@@ -3212,36 +3246,6 @@ findlog () {
   done
 }
 
-summarize_loginfo () {
-  # ciclo tra daily, weekly, monthly e custom
-  # quando trovo il file in uno di questi tre visualizzo le info ed esco
-
-  for quale in custom daily weekly monthly; do
-    if [ -e $MAINDIR/$quale ]; then
-      debecho "summarize_loginfo: Searching in $quale conffile"
-      read_and_do findlog "$1"
-    fi
-  done
-}
-
-checkrc () {
-  while [ $# -ne 0 ]; do
-    echo "==========================================================================="
-    if [ "$1" = "main" ]; then
-      echo "Check for main configuration file done."
-    elif [ ! -e $MAINDIR/$1 ]; then
-      echo "WARNING: $1 file doesn't exist!"
-    else
-      echo "Checking $1 configuration file..."
-      quale=$1
-      DISABLE_SCRIPT=1
-      read_and_do /bin/true
-      echo "Done."
-    fi
-    shift
-  done
-}
-
 fill_timevar () {
   debecho "fill_timevar: filling time-related variables"
 
@@ -3280,19 +3284,19 @@ else
 fi
 
 if [ $# -eq 1 ]; then
-  case "$1" in
-    --help|-h)
-          syntax
-          exit $E_NO_ERROR
-          ;;
-    --version|-V)
-          banner 1
-          exit $E_NO_ERROR
-          ;;
-    --debug|-d)
-          DEBUG=1
-          ;;
-  esac
+ case "$1" in
+  --help|-h)
+	 syntax
+	 exit $E_NO_ERROR
+	 ;;
+  --version|-V)
+	 banner 1
+	 exit $E_NO_ERROR
+	 ;;
+  --debug|-d)
+	 DEBUG=1
+	 ;;
+ esac
 fi
 
 make_tmpdir
@@ -3300,112 +3304,112 @@ read_rcopts "$MAINRC"
 fill_timevar "$date_refer"
 
 if [ $# -ne 0 ]; then
-  while [ $# -gt 0 ]; do
-    case "$1" in
-      --defaults)
-            show_defaults
-            ;;
-      --showlog|-s)
-            if [ -z "$NO_SHOWLOG" ]; then
-              show_log "$2"
-            fi
-            shift
-            exit $E_NO_ERROR
-            ;;
-      --summary)
-            summarize_loginfo "$2"
-            shift
-            exit $E_NO_ERROR
-            ;;
-     --checkrc)
-            shift
-            if [ -z "$1" ]; then
-              echo "Invalid syntax! You must use at least one of:"
-              echo "main, weekly, monthly, daily, custom, all"
-            fi
-            while [ $# -ne 0 ]; do
-              case "$1" in
-                weekly)
-                    rctocheck="$rctocheck weekly"
-                    ;;
-                monthly)
-                    rctocheck="$rctocheck monthly"
-                    ;;
-                daily)
-                    rctocheck="$rctocheck daily"
-                    ;;
-                custom)
-                    rctocheck="$rctocheck custom"
-                    ;;
-                all)
-                    rctocheck="weekly monthly daily custom"
-                    ;;
-                main)
-                    # already checked!
-                    rctocheck="$rctocheck main"
-                    ;;
-                *)
-                  echo "Invalid option to checkrc: $1"
-                  USCITA=$E_BAD_PARAM; exit $USCITA
-                  ;;
-              esac
-              shift
-            done
-            checkrc $rctocheck
-            ;;
-      --force|--forceonly)
-            if [ -z "$2" ]; then
-              config_file="day month week custom"
-            else
-              case "$2" in
-                daily)
-                    config_file="day"
-                    ;;
-                monthly)
-                    config_file="month"
-                    ;;
-                weekly)
-                    config_file="week"
-                    ;;
-                custom)
-                    config_file="custom"
-                    ;;
-              esac
-            fi
-            debecho "MAIN: Deleting time control files $config_file"
-            (
-              for i in $config_file; do
-                debecho "MAIN: Deleting $STATDIR/.last${i}"
-                rm -f "$STATDIR/.last${i}"
-              done
-            )
-            #DONTEXIT=1
-            [ "$1" = "--force" ] && config_file="none"
-            shift
-            ;;
-      --pager)
-            if [ -z "$NO_SHOWLOG" ]; then
-              if [ -z "$2" ]; then
-                echo "Must specify pager!"
-                USCITA=$E_NO_PAGER
-                exit $USCITA
-              fi
-              pager="$2"
-              debecho "MAIN: Pager will be: $pager"
-            fi
-            shift
-            ;;
-      -d|--debug)
-            DEBUG=1
-            ;;
-      *)
-            echo "Invalid parameter or bad context: $1"
-            USCITA=$E_BAD_PARAM; exit $USCITA
-            ;;
-    esac
-    shift
-  done
-  #[ -z "$DONTEXIT" ] && exit $E_NO_ERROR
+ while [ $# -gt 0 ]; do
+  case "$1" in
+   --defaults)
+	  show_defaults
+	  ;;
+   --showlog|-s)
+	  if [ -z "$NO_SHOWLOG" ]; then
+	   show_log "$2"
+	  fi
+          shift
+          exit $E_NO_ERROR
+          ;;
+   --summary)
+          summarize_loginfo "$2"
+          shift
+          exit $E_NO_ERROR
+          ;;
+   --checkrc)
+          shift
+          if [ -z "$1" ]; then
+           echo "Invalid syntax! You must use at least one of:"
+           echo "main, weekly, monthly, daily, custom, all"
+          fi
+          while [ $# -ne 0 ]; do
+           case "$1" in
+            weekly)
+             rctocheck="$rctocheck weekly"
+             ;;
+            monthly)
+             rctocheck="$rctocheck monthly"
+             ;;
+            daily)
+             rctocheck="$rctocheck daily"
+             ;;
+            custom)
+             rctocheck="$rctocheck custom"
+             ;;
+            all)
+             rctocheck="weekly monthly daily custom"
+             ;;
+            main)
+             # already checked!
+             rctocheck="$rctocheck main"
+             ;;
+            *)
+             echo "Invalid option to checkrc: $1"
+             USCITA=$E_BAD_PARAM; exit $USCITA
+             ;;
+           esac
+          shift
+          done
+          checkrc $rctocheck
+          ;;
+   --force|--forceonly)
+          if [ -z "$2" ]; then
+           config_file="day month week custom"
+          else
+           case "$2" in
+            daily)
+             config_file="day"
+             ;;
+            monthly)
+             config_file="month"
+             ;;
+            weekly)
+             config_file="week"
+             ;;
+            custom)
+             config_file="custom"
+             ;;
+           esac
+          fi
+          debecho "MAIN: Deleting time control files $config_file"
+          (
+           for i in $config_file; do
+            debecho "MAIN: Deleting $STATDIR/.last${i}"
+            rm -f "$STATDIR/.last${i}"
+           done
+          )
+          #DONTEXIT=1
+          [ "$1" = "--force" ] && config_file="none"
+          shift
+          ;;
+   --pager)
+          if [ -z "$NO_SHOWLOG" ]; then
+           if [ -z "$2" ]; then
+            echo "Must specify pager!"
+            USCITA=$E_NO_PAGER
+            exit $USCITA
+           fi
+           pager="$2"
+           debecho "MAIN: Pager will be: $pager"
+          fi
+          shift
+          ;;
+   -d|--debug)
+          DEBUG=1
+          ;;
+   *)
+          echo "Invalid parameter or bad context: $1"
+          USCITA=$E_BAD_PARAM; exit $USCITA
+          ;;
+  esac
+  shift
+ done
+ #[ -z "$DONTEXIT" ] && exit $E_NO_ERROR
 fi
 
 read_custom
