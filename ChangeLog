@@ -1,7 +1,12 @@
 2009.04.11 <sinuhe@gnu.org>
 
-* Fix a bug in expand_metavar
-* Remove default packing directory setting from the default rc.
+* Fix a bug in expand_metavar.
+* Remove packing directory setting from the default rc,
+  (force the user to set/create this).
+* Remove duplicate fill_timevar function.
+* Correctly wrap line in show_defaults.
+* Opportunely realphabetize of some functions (to easily find them).
+* Release 0.71.2
 
 2009.03.02 <sinuhe@gnu.org>
 

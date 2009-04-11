@@ -1,4 +1,4 @@
-#!/bin/bash     -*- shell-script -*-
+#!/bin/bash
 # GNU Rot[t]log
 # Copyright 2001, 2002, 2003, 2004, 2005 by 
 #   Stefano Falsetto <falsetto@gnu.org>
@@ -92,11 +92,91 @@ BREAK_CYCLE=255
 
 # Define functions
 #
+analize_logpart () {
+ # How many bytes must remain?
+ qdldl="$1"
+ local poschar=$[ ${#qdldl} - 1 ]
+ local lastchar=$(echo "${qdldl:$poschar:1}"|tr 'a-z' 'A-Z')
+
+ case "$lastchar" in
+  L)
+    # sono righe!
+    righe=1
+    bytes=0
+    # elimino la 'L' finale
+    qdldl=${qdldl:0:$poschar}
+    debecho "analize_logpart: Will keep last $qdldl rows"
+    ;;
+  B)
+    # sono bytes!
+    righe=0
+    bytes=1
+    # elimino la 'B' finale
+    qdldl=${qdldl:0:$poschar}
+    debecho "analize_logpart: Will keep last $qdldl bytes"
+    ;;
+  \")
+    #echo "E' una regexp!"
+    # E' una regexp! (o giù di lì...)
+    # Elimino il primo e l'ultimo carattere, praticamente gli apici
+    cr=${qdldl:1:$poschar-1}
+    debecho "analize_logpart: Here cr=$cr"
+    if [ "$cr" = "#1 day" ]; then
+     # TODO: Add use of DATE_OFFSET???
+     crit=$(LANG=en date "+%b")
+     # Il primo del mese
+     crit="$crit  1"
+     debecho "analize_logpart: Searching for $crit"
+    else
+     crit=$cr
+    fi
+    debecho "analize_logpart: Will keep rows beginning from first occurence of $crit"
+    bytes=0
+    qdldl=0
+    ;;
+  *)
+    echo "Bad parameter!"
+    debecho "analize_logpart: bad lastchar=$lastchar"
+    return 2
+    ;;
+ esac
+ debecho "analize_logpart: Here bytes=$bytes, qdldl=$qdldl, righe=$righe, crit=$crit"
+ return 0
+}
+
+attach_file() {
+ if [ ! -z "$mailopt_zip" ]; then
+  echo
+  echo "--1yeeQ81UyVL57Vl7"
+  echo "Content-Type: application/x-tgz; name=\"$storefile\""
+  echo "Content-Transfer-Encoding: base64"
+  echo "Content-Disposition: attachment; filename=\"$storefile\""
+  echo
+  if [ "$1" = "rotate" ]; then
+   mimencode $ROTATE_ATTACH
+  elif [ "$1" = "all" ]; then
+   mimencode $ALL_ATTACH
+  fi
+ else
+  echo
+  echo "--1yeeQ81UyVL57Vl7"
+  echo "Content-Type: text/plain; charset=us-ascii"
+  echo "Content-Disposition: attachment; filename=\"$storefile\""
+  echo "Content-Transfer-Encoding: 8bit"
+  echo
+  if [ "$1" = "rotate" ]; then
+   cat $ROTATE_ATTACH
+  elif [ "$1" = "all" ]; then
+   cat $ALL_ATTACH
+  fi
+ fi
+}
+
 banner() {
  echo "This is GNU Rot[t]log ver $VERSION"
  echo "Copyright 2001, 2002, 2003, 2004, 2005 by"
  echo " Stefano Falsetto <falsetto@gnu.org>"
- echo "Copyright 2008, 2009 David Egan Evans" <sinuhe@gnu.org>
+ echo "Copyright 2008, 2009 David Egan Evans <sinuhe@gnu.org>"
  echo "GNU Rot[t]log comes with ABSOLUTELY NO WARRANTY"
  if [ -z $1 ]; then
   return
@@ -104,7 +184,7 @@ banner() {
  echo
  echo "This program is free software.  You can redistribute it, or modify it,"
  echo "or both, under the terms of the GNU General Public License version 3"
- echo "(or any later version) as published by the Free Software Foundation."
+ echo '(or any later version) as published by the Free Software Foundation.'
  echo
  echo "This program is distributed in the hope that it will be useful,"
  echo "WITHOUT ANY WARRANTY; without even the implied warranty of"
@@ -121,6 +201,118 @@ checkitem () {
   echo "Error in bound definition. Token: $2"
   USCITA=$E_BAD_RANGE
   exit $USCITA
+ fi
+}
+
+check_last_rotate () {
+ debecho "check_last_rotate: Checking for $3(ly) config file"
+ if [ ! -f "$1" ]; then
+  debecho "check_last_rotate: Making new control file: $1"
+  echo "0">"$1" 2>/dev/null
+  if [ $? -ne 0 ]; then
+   echo "Can't write to $1"
+   USCITA=$E_CANT_WRITE
+   exit $USCITA
+  fi
+  chmod 600 "$1" 2>/dev/null
+  if [ $? -ne 0 ]; then
+   echo "Can't change permission to file $1"
+   USCITA=$E_NO_CHMOD
+   exit $USCITA
+  fi
+ fi
+ if [ -e "$1" ]; then
+  chmod 600 "$1"
+  last="$(cat "$1")"
+  #now="$(date +%s)"
+  date_next="$(date --date "$date_refer +1 $3")"   # "+%d/%m/%Y")"
+  debecho "check_last_rotate: Old date  : $last"
+  debecho "check_last_rotate: New date  : $stamp_now"
+  debecho "check_last_rotate: Next date : $date_next"
+  DIFFDATA=$[ stamp_now - last ];
+  if [ $DIFFDATA -ge $2 ]; then
+   debecho "check_last_rotate: $DIFFDATA >= $2"
+   echo "$stamp_now">"$1"
+   #echo "$date_next">"$1.next"
+   return 1
+  fi
+ fi
+ debecho "check_last_rotate: Rotation not needed: $DIFFDATA < $2"
+ return 0
+}
+
+check_mwd () {
+ local p=$(echo $token|cut -d"$1" -f1)
+ get_control_info date date_file
+ get_control_info stamp stamp_file
+ if [ $p -lt 1 ]; then
+  echo "$p is not a valid period!"
+  USCITA=$E_BAD_PERIOD
+  exit $USCITA
+ fi
+ case $1 in
+  w) offset="weeks" ;;
+  M) offset="months" ;;
+  d) offset="days" ;;
+  *) echo "Internal Error in check_mwd"
+     echo "parameter: $@"
+     USCITA=$E_INTERNAL
+     exit $USCITA
+     ;;
+ esac
+ # First time a log is handled must be rotated anyway
+ if [ -z "$stamp_file" ]; then
+  stamp_file=$(date -d "$date_now $p $offset ago" "+%s")
+  date_file=$(date -d "$date_now $p $offset ago" "+%m/%d/%Y %H:%M")
+  update_stamp
+ fi
+ local check_p=$(date --date "$date_file $p $offset" "+%s")
+ if [ -z "$NOT" ]; then
+  crit="$crit && [ $stamp_now -ge $check_p ]"
+ else
+  crit="$crit && [ $stamp_now -lt $check_p ]"
+ fi
+}
+
+check_perms () {
+ local tmpown
+ local tmpgrp
+ debecho "check_perms: Checking permissions..."
+ if [ "$1" != "" ]; then
+  debecho "check_perms: Checking for mode $1..."
+  if [ ${#1} -gt 4 ]; then
+   echo "Error analyzing $4 parameter"
+   echo "Invalid mode: too long!"
+   USCITA=$E_INVALID_MODE
+   exit $USCITA
+  fi
+  if [ $(expr match "$1" "[01234567]*") -ne ${#1} ]; then
+   echo "Error analyzing $4 parameter"
+   echo "Invalid mode!"
+   USCITA=$E_INVALID_MODE
+   exit $USCITA
+  fi
+ fi
+ if [ "$2" != "" ]; then
+  debecho "check_perms: Checking for owner $2..."
+  tmpvar=$(grep "^$2:" /etc/passwd 2>/dev/null|cut -d':' -f1)
+  if [ -z "$tmpvar" ]; then
+   echo "Error analyzing $4 parameter"
+   echo "Invalid owner! It doesn't exists in /etc/passwd."
+   USCITA=$E_INVALID_OWN
+   exit $USCITA
+  fi
+ fi
+ tmpvar=
+ if [ "$3" != "" ]; then
+  debecho "check_perms: Checking for group $3..."
+  tmpvar=$(grep "^$3:" /etc/group 2>/dev/null)
+  if [ -z "$tmpvar" ]; then
+   echo "Error analyzing $4 parameter"
+   echo "Invalid group! It doesn't exists in /etc/group."
+   USCITA=$E_INVALID_GRP
+   exit $USCITA
+  fi
  fi
 }
 
@@ -585,6 +777,75 @@ do_rotate() {
  fi
 }
 
+expand_filenames () {
+ # Filename expansion
+ local index=0
+ local addr=0
+ debecho "expand_filenames: Begin filename expansion for $1"
+ if [ $(expr index "$filenames" ",") -ne 0 ]; then
+  OLDIFS="$IFS"
+  IFS=","
+  for f in $filenames; do
+   is_quoted "$f"
+   debecho "expand_filenames: Checking for wildcard in $f"
+   is_wildcard "$f"
+   if [ $? -eq 0 ]; then
+    debecho "expand_filenames: Normal fill of pcldr (commas)"
+    is_readable "$f" "$1"
+    if [ $? -eq 1 ]; then
+     run_lastaction
+     continue
+    fi
+    pcldr[$index]="$f"
+    index=$[ index + 1 ]
+   else
+    IFS="$OLDIFS"
+    debecho "expand_filenames: Wildcard filling (commas)"
+    for f in $wild_filenames; do
+     is_quoted "$f"
+     is_taboo "$f"
+     if [ $? -ne 1 ]; then
+      is_readable "$f" "$1"
+      pcldr[$index]="$f"
+      debecho "expand_filenames: Inserted file: ${pcldr[$index]}"
+      index=$[ index + 1 ]
+     fi 
+    done
+   fi
+  done
+  IFS="$OLDIFS"
+  else
+   is_quoted "$filenames"
+   is_wildcard "$f"
+  if [ $? -eq 0 ]; then
+  is_readable "$f" "$1"
+   if [ $? -eq 1 ]; then
+    run_lastaction
+    #continue
+   fi
+    debecho "expand_filenames: Normal fill of pcldr"
+    pcldr[0]="$f"
+  else
+   for ff in $wild_filenames; do
+    is_quoted "$ff"
+    is_readable "$ff" "$1"
+    pcldr[$index]="$ff"
+    debecho "expand_filenames: Wildcard filling"
+    index=$[ index + 1 ]
+   done
+  fi
+ fi
+  
+ # To know at what file must be run postrotate script
+ if [ ! -z "$sharedscr" ]; then
+  addr=${#pcldr[@]}
+  addr=$[ addr - 1 ]
+  sharedscr="${pcldr[$addr]}"
+  debecho "expand_filenames: Will run postrotate script after handling $sharedscr"
+ fi
+ debecho "expand_filenames: End of filename expansion"
+}
+
 expand_metavar() {
  # If used two parameters:
  # First parameter $1 is logfile to be rotated/archived (with path)
@@ -688,6 +949,175 @@ expand_metavar() {
  variables_expanded="$1"
  debecho "expand_metavar: tmpstr after all modifies: $tmpstr"
  expanded_metavars="$tmpstr"
+}
+
+fill_timevar () {
+ debecho "fill_timevar: filling time-related variables"
+ local string_date=$(LANG=en date -d "$1" "+%s %m %d %Y %H %M %a %b %A %B"|\
+  tr A-Z a-z)
+ set -- $string_date
+ stamp_now=$1
+ today=$3
+ date_now="$2/$3/$4 $5:$6"
+ now_hour=$5
+ now_min=$6
+ name_today=$7
+ name_month=$8
+ long_name_today=$9
+ long_name_month=${10}
+ ldom=$(cal |tail -n 2|head -n 1|rev|cut -d' ' -f1|rev)
+}
+
+findlog () {
+ local log=
+ local q=
+ case $quale in
+  monthly)
+   q=month
+   ADD=2592000
+   ;;
+  daily)
+   q=day
+   ADD=86400
+   ;;
+  weekly)
+   q=week
+   ADD=604800
+   ;;
+  custom)
+   #TODO: Show correct information if logfile is in custom
+   q=custom
+   #ADD=$PERIOD
+   ;;
+ esac
+ debecho "findlog: q=$q +++ ADD=$ADD"
+ debecho "findlog: Here pcldr=${pcldr[@]}"
+ for log in ${pcldr[@]}; do
+  if [ "$(basename $log)" = "$1" ]; then
+   echo
+   echo "==============================================================================="
+   echo "Summary of logfile: $(basename $log)"
+   echo "==============================================================================="
+   echo "Full path : $log"
+   echo "Store dir : $pcdpc"
+   #local now=$(date +%s)
+   if [ ! -z "$ADD" ]; then
+    debecho "findlog: Here ADD=$ADD, stamp_now=$stamp_now"
+    local last=$(cat "$STATDIR/.last$q" 2>/dev/null)
+    # Sanity check!
+    if [ $last -lt $ADD ]; then
+     local daydone=0
+     local datedone=$(date "+%a %x")
+     local daytodo=$[ ADD / 86400 ]
+     local datetodo=$(date --date "++$daytodo days" "+%a %x")
+    else
+     local next=$[ last + ADD ]
+     local secsdone=$[ stamp_now - last ]
+     local secstodo=$[ next - stamp_now ]
+     local daydone=$[ secsdone / 86400 ]
+     local daytodo=$[ secstodo / 86400 + 1 ]
+     local datedone=$( date --date "$daydone days ago" "+%a %x")
+     local datetodo=$( date --date "++$daytodo days" "+%a %x")
+    fi
+   else
+    #local datedone=$(cat "$STATDIR/.${log//\//_}.rtt"|grep "^date:"|cut -d':' -f2-)
+    #local secsdone=$(cat "$STATDIR/.${log//\//_}.rtt"|grep "^stamp:"|cut -d':' -f2)
+    local datedone=
+    local secsdone=
+    get_control_info date datedone
+    get_control_info stamp secsdone
+    secsdone=$[ stamp_now - secsdone ]
+    local daydone=$[ secsdone / 86400 ]
+    local datetodo="$PERIOD"
+    local daytodo=
+   fi
+   if [ ! -z "$daytodo" ] && [ "$daytodo" -lt 0 ]; then
+    [ -z "$ROTATE" ] && cosa="archive" || cosa="rotate"
+    printf "\n           WARNING: This file must be ${cosa}d as soon as possible!\n\n"
+   fi
+   echo "Interval  : $quale"
+   [ ! -z "$NOCOMPRESS" ] && local textnot="yes" || local textnot="no"
+   echo "Compress  : $textnot"
+   [ ! -z "$notifempty" ] && textnot="yes" || textnot="no"
+   echo "If empty  : $textnot"
+   [ ! -z "$rotate" ] && textnot="$ROTATE" || textnot="no"
+   echo "Rotate    : $textnot"
+   [ $nomissingok -eq 0 ] && textnot="yes" || textnot="no"
+   echo "Missingok : $textnot"
+   [ ! -z "$createdir" ] && textnot="mode: $dir_perm, own.grp: $dir_own.$dir_grp" \
+     || textnot="no"
+   echo "Createdir : $textnot"
+   [ ! -z "$nomail" ] && textnot="no" || textnot="yes"
+   echo "Mail admin: $textnot"
+   [ -z "$ADD" ] && echo "Period    : $PERIOD"
+   echo
+   if [ ! -z "$ADD" ]; then
+    printf "Days elapsed from last rotation : %2d (%s)\n" $daydone "$datedone"
+    printf "Days to wait for next rotation  : %2d (%s)\n" $daytodo "$datetodo"
+   else
+    printf "Days elapsed from last rotation : %2d (%s)\n" $daydone "$datedone"
+   fi
+   if [ ! -z "$DELAY" ]; then
+    echo
+    notcomp=$(grep "$1" $DELAYED_FILES 2>/dev/null|cut -d'=' -f2-)
+    echo "Not compressed log: $notcomp"
+   fi
+   echo
+   return $BREAK_CYCLE
+  fi
+ done
+}
+
+get_control_info () {
+ local NameOfCtrlFile="$STATDIR/.${log//\//_}.rtt"
+ case "$1" in
+  date|stamp|size|partial)
+   eval "$2=\"$(cat $NameOfCtrlFile 2>/dev/null|grep "^$1:"|\
+    cut -d':' -f2-)\""
+   ;;
+  *)
+   echo "Internal error in get_control_info call"
+   echo "parameters: $@"
+   USCITA=$E_INTERNAL
+   exit $USCITA
+ esac
+}
+
+header_mail() {
+ echo "From: $fromuser"
+ echo "To: $touser"
+ if [ -z "$1" ]; then
+  echo "Subject: GNU Rot[t]log $quale maintenance"
+ elif [ "$1" = "err" ]; then
+  echo "Subject: GNU Rot[t]log $quale maintenance: ERROR report"
+ elif [ "$1" = "stat" ]; then
+  echo "Subject: GNU Rot[t]log $quale maintenance: statistical report"
+ elif [ "$1" = "over" ]; then
+  echo "Subject: GNU Rot[t]log $quale maintenance: overwriting logfile"
+  echo "Mime-Version: 1.0"
+  echo "Content-Type: multipart/mixed; boundary=\"1yeeQ81UyVL57Vl7\""
+  echo "Content-Disposition: inline"
+  echo "Content-Transfer-Encoding: 8bit"
+  echo "Content-Length: $size_b"
+  echo 
+  echo 
+  echo "--1yeeQ81UyVL57Vl7"
+  echo "Content-Type: text/plain; charset=us-ascii"
+  echo "Content-Disposition: inline"
+ elif [ "$1" = "all" ]; then
+  echo "Subject: GNU Rot[t]log $quale maintenance: attaching handled logfile"
+  echo "Mime-Version: 1.0"
+  echo "Content-Type: multipart/mixed; boundary=\"1yeeQ81UyVL57Vl7\""
+  echo "Content-Disposition: inline"
+  echo "Content-Transfer-Encoding: 8bit"
+  echo "Content-Length: $size_b"
+  echo 
+  echo 
+  echo "--1yeeQ81UyVL57Vl7"
+  echo "Content-Type: text/plain; charset=us-ascii"
+  echo "Content-Disposition: inline"
+ fi
+ echo
 }
 
 is_readable() {
@@ -829,6 +1259,182 @@ lastnum () {
  fi
  debecho "lastnum: returning $lastnum"
  return $lastnum
+}
+
+mail_err() {
+ cat <<EOF
+Details of $quale log rotation NOT performed
+
+
+File to $1           : $log
+Name of ${1}d file   : $storefile
+
+$( cat $TMPERRMSG )
+
+If you don't correct this problem before this date rottlog will send
+same error message next time it will try to manage this logfile.    
+
+
+EOF
+}
+
+mail_norm() {
+ echo "Details of $quale log rotation performed:"
+ echo 
+ echo 
+ local lenpack=${#packdir}
+ echo "File to $1         : $log"
+ if [ $(expr "$storefile" : "$packdir*") -eq $lenpack ]; then
+  echo "Main store dir         : $packdir"
+  local short_storefile=${storefile:lenpack+1}
+ else
+  local short_storefile="$storefile"
+ fi
+ echo "File ${1}d in        : $short_storefile"
+ if [ ! -z "$qdldl" ]; then
+  echo "Old filesize          : $size_b"
+  echo "New filesize          : $size_a"
+ fi
+ echo "Log $2 begin on  : $date_begin"
+ echo "Completed on           : $date_end"
+ if [ ! -z "$DELAY"  -a "$quale" != "custom" ]; then
+  echo "Will be compressed on   : $date_next (approximatively)" 
+ fi
+ echo
+ if [ "$quale" != "custom" ]; then
+  echo "Next rotation will be performed approximatively on $date_next." 
+ fi
+ if [ -e $ROTATE_ATTACH ] && [ ! -z "$mailopt_over" ]; then
+  echo "Attaching overwrited logfile."
+ fi
+ if [ -e $ALL_ATTACH ] && [ ! -z "$mailopt_all" ]; then
+  echo "Attaching handled logfile."
+ fi
+}
+
+mail_stat() {
+ source $TMP_STATFILE
+ local end_refer=$(date "+%m/%d/%Y %H:%M:%S")
+ local date_end=$(date -d "$end_refer" "+%s")
+ local diff_s=$[ date_end - stamp_now ]
+ local diff_h=$(expr $diff_s / 3600)
+ local start_d=$(date -d "$date_refer" "+%d/%m/%Y %H:%M:%S")
+ local end_d=$(date -d "$end_refer" "+%d/%m/%Y %H:%M:%S")
+ if [ $diff_h -ne 0 ]; then
+  local diff_rest=$(expr $diff_s % 3600)
+  local diff_m=$(expr $diff_rest / 60)
+  local diff_s=$(expr $diff_rest % 60)
+ else
+  local diff_m=$(expr $diff_s / 60)
+  local diff_s=$(expr $diff_s % 60)
+ fi
+ local diff_time=$(printf "%02d:%02d:%02d" "$diff_h" "$diff_m" "$diff_s")
+ local totalf=0
+ local bytes_freed=0
+ for f in custom daily weekly monthly; do
+  eval totalf=$[ totalf + count_$f ]
+  eval bytes_freed=$[ bytes_freed + freed_$f ]
+ done
+ cat <<EOF
+Statistical report for GNU Rot[t]log
+
+Disk-related statistics:
+
+Total number of custom rotated logfiles     : $count_custom
+Total number of daily rotated logfiles      : $count_daily
+Total number of weekly rotated logfiles     : $count_weekly
+Total number of monthly rotated logfiles    : $count_monthly
+---------------------------------------------------------
+Total number of logs handled                : $totalf
+
+Total bytes freed handling custom logfiles  : $freed_custom
+Total bytes freed handling daily logfiles   : $freed_daily
+Total bytes freed handling weekly logfiles  : $freed_weekly
+Total bytes freed handling monthly logfiles : $freed_monthly
+------------------------------------------------------------
+Total bytes freed                           : $bytes_freed
+
+
+Time-related statistics:
+
+Start time                                  : $start_d
+End time                                    : $end_d
+------------------------------------------------------------
+Total execution time                        : $diff_time
+
+EOF
+}
+
+mail_to_admin() {
+ (
+  trap 'debecho "mail_to_admin: Erasing temporary files"; rm -f $MAILMSG $ROTATE_ATTACH $ALL_ATTACH' 0
+
+  if [ "$1" = "stat" ]; then
+   debecho "mail_to_admin: making stat mail"
+   header_mail stat	 >$MAILMSG
+   mail_stat   	>>$MAILMSG
+   signature   	>>$MAILMSG
+   cat $MAILMSG|$mail
+   debecho "mail_to_admin: Sent stats mail from $fromuser to $touser"
+   return
+  fi
+  if [ ! -z "$qdldl" ]; then
+   local size_a=$(ls -l "$storefile" 2>/dev/null|tr -s ' '|cut -d' ' -f5)
+  else
+   local size_a=0
+  fi
+  if [ $RET_DO_ROTATE -eq 0 ]; then
+   local diffbytes=$[ size_b - size_a ]
+  else
+   [ -z "$REALLY_FREED" ] && local diffbytes=0 || diffbytes=$REALLY_FREED
+  fi
+  if [ ! -z $bytes_freed ]; then 
+   bytes_freed=$[  bytes_freed + diffbytes ]
+  else
+   bytes_freed=diffbytes
+  fi
+  eval freed_$quale=$[ freed_$quale + diffbytes ]
+  update_stats $quale freed
+  if [ ! -z "$ROTATE" ]; then
+   local cosa="rotate"
+   local cosing="rotating"
+  else
+   local cosa="archive"
+   local cosing="archiving"
+  fi
+  if [ -s "$TMPERRMSG" ] && [ ! -z $mailopt_err ]; then
+   header_mail err 	>$MAILMSG
+   mail_err $cosa	>>$MAILMSG
+   signature		>>$MAILMSG
+   cat $MAILMSG|$mail
+   return
+  fi
+  if [ ! -s "$TMPERRMSG" ]; then
+   debecho "mail_to_admin: here ROTATE_ATTACH=$ROTATE_ATTACH"
+   debecho "mail_to_admin: here mailopt_over=$mailopt_over"
+   if [ -e $ROTATE_ATTACH ] && [ ! -z "$mailopt_over" ]; then
+    debecho "mail_to_admin: Making attach e-mail message (over)"
+    header_mail over		>$MAILMSG
+    mail_norm	$cosa $cosing	>>$MAILMSG
+    signature			>>$MAILMSG
+    attach_file rotate	>>$MAILMSG
+   elif [ -e $ALL_ATTACH ] && [ ! -z "$mailopt_all" ]; then
+    debecho "mail_to_admin: Making attach e-mail message (all)"
+    header_mail all           >$MAILMSG
+    mail_norm $cosa $cosing   >>$MAILMSG
+    signature                 >>$MAILMSG
+    attach_file all           >>$MAILMSG
+   else
+    debecho "mail_to_admin: Making standard e-mail message"
+    header_mail		>$MAILMSG
+    mail_norm	$cosa $cosing	>>$MAILMSG
+    signature			>>$MAILMSG
+   fi
+   cat $MAILMSG|$mail
+   debecho "mail_to_admin: Sent mail from $fromuser to $touser"
+   return
+  fi
+  )
 }
 
 make_metapos() {
@@ -1135,6 +1741,104 @@ remove_maxage() {
  rm -f $TMP_ROTTMAXAGE
 }
 
+read_custom() {
+ quale="custom"
+ if [ ! -e $MAINDIR/$quale ]; then
+  debecho "read_custom: Config file '$quale' does not exist"
+  return
+ fi
+ debecho "read_custom: This file will always be read"
+ read_and_do
+ if [ "$config_file" = "custom" ]; then
+  [ -e "$TMP_STATFILE" ] && mail_to_admin stat
+  exit $E_NO_ERROR
+ fi
+}
+
+read_daily() {
+ quale="daily"
+ if [ ! -e $MAINDIR/$quale ]; then
+  debecho "read_daily: Config file '$quale' does not exist"
+  return
+ fi
+ check_last_rotate "$STATDIR/.lastday" 86400 day
+ if [ $? -eq 1 ]; then
+  debecho "read_daily: Rotating daily logfiles"
+  read_and_do
+ fi
+ if [ "$config_file" = "day" ]; then
+  [ -e "$TMP_STATFILE" ] && mail_to_admin stat
+  exit $E_NO_ERROR
+ fi
+}
+
+read_log () {
+ local old_pcdpc="$pcdpc"
+ for log in ${pcldr[@]}; do
+  pcdpc="$old_pcdpc"
+  expand_metavar "$log" "$pcdpc"
+  pcdpc="$expanded_metavars"
+  if [ $1 -eq 1 ]; then
+   if [ "${2:0:1}" != "/" ]; then
+    storefile="$packdir/$2"
+   else
+    storefile="$2"
+   fi
+  else
+   storefile="$pcdpc/$2"
+  fi
+  debecho "read_log: Here storefile=$storefile"
+  if [ -r "$storefile" ]; then
+   debecho "read_log: Found $storefile"
+   debecho "read_log: NOCOMPRESS=$NOCOMPRESS; DELAY=$DELAY;"
+   [ ! -z "$DELAY" ] && local c=$(grep "$storefile" $DELAYED_FILES 2>/dev/null)
+   if [ ! -z "$NOCOMPRESS" ] || [ ! -z "$c" ]; then
+    unpacker=cat
+    uncompress=
+    extension="txt"
+   fi
+   cp -f "$storefile" $NEWtmpFILE.$extension
+   if [ ! -r "$NEWtmpFILE.$extension" ]; then
+    echo "Can't read temporary logfile!"
+    USCITA=$E_FILE_NOREAD
+    exit $USCITA
+   fi
+   debecho "read_log: $unpacker $uncompress $NEWtmpFILE.$extension | $PAGER"
+   $unpacker $uncompress "$NEWtmpFILE.$extension" | $PAGER
+   echo "$NEWtmpFILE" >"$NEWtmpFILE.$extension"
+   return $BREAK_CYCLE
+  fi
+ done
+}
+
+read_monthly() {
+ quale="monthly"
+ if [ ! -e $MAINDIR/$quale ]; then
+  debecho "read_monthly: Config file '$quale' does not exist"
+  return
+ fi
+ # Comparision time is 28, 29, 30 or 31 days depending on previous
+ # month
+ local days=
+ local comptime=
+ for days in 31 30 29 28; do
+  comptime=$(cal $(date --date "$date_refer -1 month" "+%m %Y")|grep $days)
+  if [ ! -z "$comptime" ]; then
+   comptime=$[ days * 86400 ]
+   break
+  fi
+ done
+ check_last_rotate "$STATDIR/.lastmonth" $comptime month
+ if [ $? -eq 1 ]; then
+  debecho "read_monthly: Rotating monthly logfiles"
+  read_and_do
+ fi
+ if [ "$config_file" = "month" ]; then
+  [ -e "$TMP_STATFILE" ] && mail_to_admin stat
+  exit $E_NO_ERROR
+ fi
+}
+
 read_rcopts() {
  local tmp_param
  local RC_VARS="packer compress unpacker uncompress extension pager packdir fromuser touser notifempty mail nomail maxdepth follow_symlink nomissingok missingok nocompress ifempty notifempty nocreate createdir dir_perm dir_own dir_grp fil_own fil_grp fil_perm remove_missing default_storefile SunMon mailstats create_logrotate log_rotate nostoredir sharescripts nosharedscripts tabooext maxage"
@@ -1231,6 +1935,23 @@ read_rcopts() {
  fi
 }
 
+read_weekly() {
+ quale="weekly"
+ if [ ! -e $MAINDIR/$quale ]; then
+  debecho "read_weekly: Config file '$quale' does not exist"
+  return
+ fi
+ check_last_rotate "$STATDIR/.lastweek" 604800 week
+ if [ $? -eq 1 ]; then
+  debecho "read_weekly: Rotating weekly logfiles"
+  read_and_do
+ fi
+ if [ "$config_file" = "week" ]; then
+  [ -e "$TMP_STATFILE" ] && mail_to_admin stat
+  exit $E_NO_ERROR
+ fi
+}
+
 # NEW VERSION
 rotate_logrotate() {
  # Pull down rotated files
@@ -1280,6 +2001,19 @@ rotate_logrotate() {
   mv -f $last_file2 $last_file
  }
  return $START_ROTATE
+}
+
+run_lastaction () {
+ debecho "run_lastaction: Here LASTACTION=$LASTACTION"
+ if [ ! -z "$LASTACTION" ] && [ -z "$DISABLE_SCRIPT" ]; then
+  $LASTACTION 2>$TMPERR
+  if [ $? -ne $LASTACTION_EXIT ]; then
+   echo "Error while executing $1"
+   echo "stderr from $LINEA:"
+   cat $TMPERR
+   USCITA=$E_BAD_ACTION
+  fi
+ fi
 }
 
 setup_vars () {
@@ -1364,6 +2098,85 @@ setup_vars () {
  # TODO: add mailopt_* ??
 }
 
+show_defaults () {
+ local VARS="VERSION MAINDIR MAINRC STATDIR DELAYED_FILES DATE_OFFSET \
+             BASE_TMP_DIR DEBUG mail pager follow_symlinks dir_own dir_grp \
+             dir_perm fil_own fil_grp fil_perm tabooext"
+ local V=
+ banner
+ echo
+ echo "Default values for important variables:"
+ echo
+ for V in $VARS; do
+  echo -n "$V="
+  eval echo \$$V
+ done
+ #Alternative :-)
+ # But less flexible...
+ #set|grep "^def_.*="|cut -b 5-
+}
+
+show_log () {
+ debecho "show_log: input pager: pager=$pager -- PAGER=$PAGER"
+ if [ ! -z "$pager" ]; then
+  PAGER="$pager"
+ fi
+ if [ -z "$PAGER" ]; then
+  PAGER=$(which less)
+  if [ -z "$PAGER" ]; then
+   PAGER=$(which more)
+  fi
+  if [ -z "$PAGER" ]; then
+   echo "Can't find a pager! Use pager variable in main rc file or "
+   echo "PAGER environnement variable"
+   USCITA=$E_NO_PAGER
+   exit $USCITA
+  fi
+  if [ ! -x "$PAGER" ]; then
+   echo "Can't exec pager $PAGER!"
+   USCITA=$E_NO_PAGER
+   exit $USCITA
+  fi
+ fi
+ debecho "show_log: Using pager $PAGER"
+ if [ -z "$unpacker" ] || [ -z "$uncompress" ]; then
+  echo "Bad configuration: use unpacker and uncompress variables in mail rc file"
+  USCITA=$E_CANT_UNCOMPRESS
+  exit $USCITA
+ fi
+ if [ $(expr "$1" : ".*\/.*") -ne 0 ]; then
+  rpath=1
+ else
+  rpath=0
+ fi
+ debecho "show_log: Here rpath=$rpath"
+ for quale in custom daily weekly monthly; do
+  if [ -e $MAINDIR/$quale ]; then
+   debecho "show_log: Searching in $quale conffile"
+   read_and_do read_log "$rpath" "$1"
+   if [ "$(cat "$NEWtmpFILE.$extension" 2>/dev/null)" = "$NEWtmpFILE" ]; then
+    USCITA=$BREAK_CYCLE
+    break
+   fi
+  fi
+ done
+ if [ $USCITA -ne $BREAK_CYCLE ]; then
+  echo "Can't find $1"
+  USCITA=$E_FILE_NOFIND
+  exit $USCITA
+ fi
+}
+
+signature() {
+cat <<EOF
+
+---
+
+GNU Rot[t]log v.$VERSION
+     http://www.gnu.org/software/rottlog
+EOF
+}
+
 summarize_loginfo () {
  # Cycle between daily, weekly, monthly, and custom
  # quando trovo il file in uno di questi tre visualizzo le info ed esco
@@ -1378,7 +2191,7 @@ summarize_loginfo () {
 syntax () {
  banner
  echo
- echo "Syntax: rottlog <options>"
+ echo "Syntax: rottlog <OPTIONS>"
  echo "  --help, -h"
  echo "    Display this page and exit"
  echo "  --version, -V"
@@ -1423,270 +2236,18 @@ update_stamp() {
  fi
 }
 
-
-analize_logpart () {
-  # quanti bytes devono rimanere?
-  qdldl="$1"
-  local poschar=$[ ${#qdldl} - 1 ]
-  local lastchar=$(echo "${qdldl:$poschar:1}"|tr 'a-z' 'A-Z')
-
-  case "$lastchar" in
-    L)
-      # sono righe!
-      righe=1
-      bytes=0
-      # elimino la 'L' finale
-      qdldl=${qdldl:0:$poschar}
-      debecho "analize_logpart: Will keep last $qdldl rows"
-      ;;
-    B)
-      # sono bytes!
-      righe=0
-      bytes=1
-      # elimino la 'B' finale
-      qdldl=${qdldl:0:$poschar}
-      debecho "analize_logpart: Will keep last $qdldl bytes"
-      ;;
-    \")
-      #echo "E' una regexp!"
-      # E' una regexp! (o giù di lì...)
-      # Elimino il primo e l'ultimo carattere, praticamente gli apici
-      cr=${qdldl:1:$poschar-1}
-      debecho "analize_logpart: Here cr=$cr"
-      if [ "$cr" = "#1 day" ]; then
-        # TODO: Add use of DATE_OFFSET???
-        crit=$(LANG=en date "+%b")
-        # Il primo del mese
-        crit="$crit  1"
-        debecho "analize_logpart: Searching for $crit"
-      else
-        crit=$cr
-      fi
-      debecho "analize_logpart: Will keep rows beginning from first occurence of $crit"
-      bytes=0
-      qdldl=0
-      ;;
-    *)
-      echo "Bad parameter!"
-      debecho "analize_logpart: bad lastchar=$lastchar"
-      return 2
-      ;;
-  esac
-  debecho "analize_logpart: Here bytes=$bytes, qdldl=$qdldl, righe=$righe, crit=$crit"
-  return 0
-}
-
-check_perms () {
-  local tmpown
-  local tmpgrp
-
-  debecho "check_perms: Checking permissions..."
-
-  if [ "$1" != "" ]; then
-    debecho "check_perms: Checking for mode $1..."
-    if [ ${#1} -gt 4 ]; then
-      echo "Error analyzing $4 parameter"
-      echo "Invalid mode: too long!"
-      USCITA=$E_INVALID_MODE
-      exit $USCITA
-    fi
-    if [ $(expr match "$1" "[01234567]*") -ne ${#1} ]; then
-      echo "Error analyzing $4 parameter"
-      echo "Invalid mode!"
-      USCITA=$E_INVALID_MODE
-      exit $USCITA
-    fi
-  fi
-  if [ "$2" != "" ]; then
-    debecho "check_perms: Checking for owner $2..."
-    tmpvar=$(grep "^$2:" /etc/passwd 2>/dev/null|cut -d':' -f1)
-    if [ -z "$tmpvar" ]; then
-      echo "Error analyzing $4 parameter"
-      echo "Invalid owner! It doesn't exists in /etc/passwd."
-      USCITA=$E_INVALID_OWN
-      exit $USCITA
-    fi
-  fi
-  tmpvar=
-  if [ "$3" != "" ]; then
-    debecho "check_perms: Checking for group $3..."
-    tmpvar=$(grep "^$3:" /etc/group 2>/dev/null)
-    if [ -z "$tmpvar" ]; then
-      echo "Error analyzing $4 parameter"
-      echo "Invalid group! It doesn't exists in /etc/group."
-      USCITA=$E_INVALID_GRP
-      exit $USCITA
-    fi
-  fi
-
-}
-
-run_lastaction () {
-  debecho "run_lastaction: Here LASTACTION=$LASTACTION"
-  if [ ! -z "$LASTACTION" ] && [ -z "$DISABLE_SCRIPT" ]; then
-    $LASTACTION 2>$TMPERR
-    if [ $? -ne $LASTACTION_EXIT ]; then
-      echo "Error while executing $1"
-      echo "stderr from $LINEA:"
-      cat $TMPERR
-      USCITA=$E_BAD_ACTION
-    fi
-  fi
-}
-
-expand_filenames () {
-  # Filename expansion
-  local index=0
-  local addr=0
-
-  debecho "expand_filenames: Begin filename expansion for $1"
-  if [ $(expr index "$filenames" ",") -ne 0 ]; then
-    OLDIFS="$IFS"
-    IFS=","
-    for f in $filenames; do
-      is_quoted "$f"
-      debecho "expand_filenames: Checking for wildcard in $f"
-      is_wildcard "$f"
-      if [ $? -eq 0 ]; then
-        debecho "expand_filenames: Normal fill of pcldr (commas)"
-        is_readable "$f" "$1"
-        if [ $? -eq 1 ]; then
-          run_lastaction
-          continue
-        fi
-        pcldr[$index]="$f"
-        index=$[ index + 1 ]
-      else
-        IFS="$OLDIFS"
-        debecho "expand_filenames: Wildcard filling (commas)"
-        for f in $wild_filenames; do
-          is_quoted "$f"
-          is_taboo "$f"
-          if [ $? -ne 1 ]; then
-            is_readable "$f" "$1"
-            pcldr[$index]="$f"
-            debecho "expand_filenames: Inserted file: ${pcldr[$index]}"
-            index=$[ index + 1 ]
-          fi 
-        done
-      fi
-    done
-    IFS="$OLDIFS"
-  else
-    is_quoted "$filenames"
-    is_wildcard "$f"
-    if [ $? -eq 0 ]; then
-      is_readable "$f" "$1"
-      if [ $? -eq 1 ]; then
-        run_lastaction
-        #continue
-      fi
-      debecho "expand_filenames: Normal fill of pcldr"
-      pcldr[0]="$f"
-    else
-      for ff in $wild_filenames; do
-        is_quoted "$ff"
-        is_readable "$ff" "$1"
-        pcldr[$index]="$ff"
-        debecho "expand_filenames: Wildcard filling"
-        index=$[ index + 1 ]
-      done
-    fi
-  fi
-  
-  # To know at what file must be run postrotate script
-  if [ ! -z "$sharedscr" ]; then
-    addr=${#pcldr[@]}
-    addr=$[ addr - 1 ]
-    sharedscr="${pcldr[$addr]}"
-    debecho "expand_filenames: Will run postrotate script after handling $sharedscr"
-  fi
-  debecho "expand_filenames: End of filename expansion"
-}
-
-fill_timevar () {
-  local string_date=$(LANG=en date -d "$1" "+%s %m %d %Y %H %M %a %b %A %B"|\
-                      tr A-Z a-z)
-
-  set -- $string_date
-  stamp_now=$1
-  today=$3
-  date_now="$2/$3/$4 $5:$6"
-  now_hour=$5
-  now_min=$6
-  name_today=$7
-  name_month=$8
-  long_name_today=$9
-  long_name_month=${10}
-  ldom=$(cal |tail -n 2|head -n 1|rev|cut -d' ' -f1|rev)
-}
-
-get_control_info () {
-  local NameOfCtrlFile="$STATDIR/.${log//\//_}.rtt"
-  
-  case "$1" in
-    date|stamp|size|partial)
-        eval "$2=\"$(cat $NameOfCtrlFile 2>/dev/null|grep "^$1:"|\
-                     cut -d':' -f2-)\""
-             ;;
-    *)
-      echo "Internal error in get_control_info call"
-      echo "parameters: $@"
-      USCITA=$E_INTERNAL
-      exit $USCITA
-  esac
-}
-
-check_mwd () {
-  local p=$(echo $token|cut -d"$1" -f1)
-  get_control_info date date_file
-  get_control_info stamp stamp_file
-
-  if [ $p -lt 1 ]; then
-    echo "$p is not a valid period!"
-    USCITA=$E_BAD_PERIOD
-    exit $USCITA
-  fi
-
-  case $1 in
-    w) offset="weeks" ;;
-    M) offset="months" ;;
-    d) offset="days" ;;
-    *) echo "Internal Error in check_mwd"
-       echo "parameter: $@"
-       USCITA=$E_INTERNAL
-       exit $USCITA
-       ;;
-  esac
-  
-  # First time a log is handled must be rotated anyway
-  if [ -z "$stamp_file" ]; then
-    stamp_file=$(date -d "$date_now $p $offset ago" "+%s")
-    date_file=$(date -d "$date_now $p $offset ago" "+%m/%d/%Y %H:%M")
-    update_stamp
-  fi
-
-  local check_p=$(date --date "$date_file $p $offset" "+%s")
-  if [ -z "$NOT" ]; then
-    crit="$crit && [ $stamp_now -ge $check_p ]"
-  else
-    crit="$crit && [ $stamp_now -lt $check_p ]"
-  fi
-}
-
 update_stats() {
-(
+ (
   local newc=$(eval echo \$${2}_${1})
-
   if [ -s $TMP_STATFILE ]; then
-    source $TMP_STATFILE
-    local newc=$[ newc + $(eval echo \$${2}_${1}) ]
-
-    sed -e "s/^$2_$1=.*/$2_$1=$newc/" $TMP_STATFILE >$NEW_TMP_STATFILE
-    cp -f $NEW_TMP_STATFILE $TMP_STATFILE
+   source $TMP_STATFILE
+   local newc=$[ newc + $(eval echo \$${2}_${1}) ]
+   sed -e "s/^$2_$1=.*/$2_$1=$newc/" $TMP_STATFILE >$NEW_TMP_STATFILE
+   cp -f $NEW_TMP_STATFILE $TMP_STATFILE
   fi
-)
+ )
 }
+
 
 parse_period () {
   local exit_t=
@@ -2640,639 +3201,13 @@ read_and_do() {
     #unset pcldr
   done <$PURGED_FILE
   rm -f $TMP_PERIOD_RC # TODO: move to a setup routine????
-
-}
-
-signature() {
-cat <<EOF
-
----
-
-GNU Rot[t]log v.$VERSION
-     http://www.gnu.org/software/rottlog
-EOF
-}
-
-mail_stat() {
-
-  source $TMP_STATFILE
-  local end_refer=$(date "+%m/%d/%Y %H:%M:%S")
-  local date_end=$(date -d "$end_refer" "+%s")
-  local diff_s=$[ date_end - stamp_now ]
-  local diff_h=$(expr $diff_s / 3600)
-  local start_d=$(date -d "$date_refer" "+%d/%m/%Y %H:%M:%S")
-  local end_d=$(date -d "$end_refer" "+%d/%m/%Y %H:%M:%S")
-  if [ $diff_h -ne 0 ]; then
-    local diff_rest=$(expr $diff_s % 3600)
-    local diff_m=$(expr $diff_rest / 60)
-    local diff_s=$(expr $diff_rest % 60)
-  else
-    local diff_m=$(expr $diff_s / 60)
-    local diff_s=$(expr $diff_s % 60)
-  fi
-
-  local diff_time=$(printf "%02d:%02d:%02d" "$diff_h" "$diff_m" "$diff_s")
-
-  local totalf=0
-  local bytes_freed=0
-
-  for f in custom daily weekly monthly; do
-    eval totalf=$[ totalf + count_$f ]
-    eval bytes_freed=$[ bytes_freed + freed_$f ]
-  done
-  
-
-  cat <<EOF
-Statistical report for GNU Rot[t]log
-
-Disk-related statistics:
-
-Total number of custom rotated logfiles     : $count_custom
-Total number of daily rotated logfiles      : $count_daily
-Total number of weekly rotated logfiles     : $count_weekly
-Total number of monthly rotated logfiles    : $count_monthly
----------------------------------------------------------
-Total number of logs handled                : $totalf
-
-Total bytes freed handling custom logfiles  : $freed_custom
-Total bytes freed handling daily logfiles   : $freed_daily
-Total bytes freed handling weekly logfiles  : $freed_weekly
-Total bytes freed handling monthly logfiles : $freed_monthly
-------------------------------------------------------------
-Total bytes freed                           : $bytes_freed
-
-
-Time-related statistics:
-
-Start time                                  : $start_d
-End time                                    : $end_d
-------------------------------------------------------------
-Total execution time                        : $diff_time
-
-EOF
-}
-
-header_mail() {
-  echo "From: $fromuser"
-  echo "To: $touser"
-  if [ -z "$1" ]; then
-    echo "Subject: GNU Rot[t]log $quale maintenance"
-  elif [ "$1" = "err" ]; then
-    echo "Subject: GNU Rot[t]log $quale maintenance: ERROR report"
-  elif [ "$1" = "stat" ]; then
-    echo "Subject: GNU Rot[t]log $quale maintenance: statistical report"
-  elif [ "$1" = "over" ]; then
-    echo "Subject: GNU Rot[t]log $quale maintenance: overwriting logfile"
-    echo "Mime-Version: 1.0"
-    echo "Content-Type: multipart/mixed; boundary=\"1yeeQ81UyVL57Vl7\""
-    echo "Content-Disposition: inline"
-    echo "Content-Transfer-Encoding: 8bit"
-    echo "Content-Length: $size_b"
-    echo 
-    echo 
-    echo "--1yeeQ81UyVL57Vl7"
-    echo "Content-Type: text/plain; charset=us-ascii"
-    echo "Content-Disposition: inline"
-  elif [ "$1" = "all" ]; then
-    echo "Subject: GNU Rot[t]log $quale maintenance: attaching handled logfile"
-    echo "Mime-Version: 1.0"
-    echo "Content-Type: multipart/mixed; boundary=\"1yeeQ81UyVL57Vl7\""
-    echo "Content-Disposition: inline"
-    echo "Content-Transfer-Encoding: 8bit"
-    echo "Content-Length: $size_b"
-    echo 
-    echo 
-    echo "--1yeeQ81UyVL57Vl7"
-    echo "Content-Type: text/plain; charset=us-ascii"
-    echo "Content-Disposition: inline"
-  fi
-  echo
-}
-
-mail_norm() {
-  echo "Details of $quale log rotation performed:"
-  echo 
-  echo 
-  local lenpack=${#packdir}
-  echo "File to $1         : $log"
-  if [ $(expr "$storefile" : "$packdir*") -eq $lenpack ]; then
-    echo "Main store dir         : $packdir"
-    local short_storefile=${storefile:lenpack+1}
-  else
-    local short_storefile="$storefile"
-  fi
-  echo "File ${1}d in        : $short_storefile"
-
-  if [ ! -z "$qdldl" ]; then
-    echo "Old filesize          : $size_b"
-    echo "New filesize          : $size_a"
-  fi
-
-  echo "Log $2 begin on  : $date_begin"
-  echo "Completed on           : $date_end"
-
-  if [ ! -z "$DELAY"  -a "$quale" != "custom" ]; then
-    echo "Will be compressed on   : $date_next (approximatively)" 
-  fi
-
-  echo
-  
-  if [ "$quale" != "custom" ]; then
-    echo "Next rotation will be performed approximatively on $date_next." 
-  fi
-  if [ -e $ROTATE_ATTACH ] && [ ! -z "$mailopt_over" ]; then
-    echo "Attaching overwrited logfile."
-  fi
-  if [ -e $ALL_ATTACH ] && [ ! -z "$mailopt_all" ]; then
-    echo "Attaching handled logfile."
-  fi
-}
-
-attach_file() {
-  if [ ! -z "$mailopt_zip" ]; then
-    echo
-    echo "--1yeeQ81UyVL57Vl7"
-    echo "Content-Type: application/x-tgz; name=\"$storefile\""
-    echo "Content-Transfer-Encoding: base64"
-    echo "Content-Disposition: attachment; filename=\"$storefile\""
-    echo
-    if [ "$1" = "rotate" ]; then
-      mimencode $ROTATE_ATTACH
-    elif [ "$1" = "all" ]; then
-      mimencode $ALL_ATTACH
-    fi
-  else
-    echo
-    echo "--1yeeQ81UyVL57Vl7"
-    echo "Content-Type: text/plain; charset=us-ascii"
-    echo "Content-Disposition: attachment; filename=\"$storefile\""
-    echo "Content-Transfer-Encoding: 8bit"
-    echo
-    if [ "$1" = "rotate" ]; then
-      cat $ROTATE_ATTACH
-    elif [ "$1" = "all" ]; then
-      cat $ALL_ATTACH
-    fi
-  fi
-}
-
-mail_err() {
-cat <<EOF
-Details of $quale log rotation NOT performed
-
-
-File to $1           : $log
-Name of ${1}d file   : $storefile
-
-$( cat $TMPERRMSG )
-
-If you don't correct this problem before this date rottlog will send
-same error message next time it will try to manage this logfile.    
-
-
-EOF
-}
-
-mail_to_admin() {
-  (
-  trap 'debecho "mail_to_admin: Erasing temporary files"; rm -f $MAILMSG $ROTATE_ATTACH $ALL_ATTACH' 0
-
-  if [ "$1" = "stat" ]; then
-    debecho "mail_to_admin: making stat mail"
-    header_mail stat	 >$MAILMSG
-    mail_stat   	>>$MAILMSG
-    signature   	>>$MAILMSG
-    cat $MAILMSG|$mail
-    debecho "mail_to_admin: Sent stats mail from $fromuser to $touser"
-    return
-  fi
-
-  if [ ! -z "$qdldl" ]; then
-    local size_a=$(ls -l "$storefile" 2>/dev/null|tr -s ' '|cut -d' ' -f5)
-  else
-    local size_a=0
-  fi
-  if [ $RET_DO_ROTATE -eq 0 ]; then
-    local diffbytes=$[ size_b - size_a ]
-  else
-    [ -z "$REALLY_FREED" ] && local diffbytes=0 || diffbytes=$REALLY_FREED
-  fi
-  if [ ! -z $bytes_freed ]; then 
-    bytes_freed=$[  bytes_freed + diffbytes ]
-  else
-    bytes_freed=diffbytes
-  fi
-  eval freed_$quale=$[ freed_$quale + diffbytes ]
-  update_stats $quale freed
-  
-  if [ ! -z "$ROTATE" ]; then
-    local cosa="rotate"
-    local cosing="rotating"
-  else
-    local cosa="archive"
-    local cosing="archiving"
-  fi
-
-  if [ -s "$TMPERRMSG" ] && [ ! -z $mailopt_err ]; then
-    header_mail err 	>$MAILMSG
-    mail_err $cosa	>>$MAILMSG
-    signature		>>$MAILMSG
-    cat $MAILMSG|$mail
-    return
-  fi
-  if [ ! -s "$TMPERRMSG" ]; then
-    debecho "mail_to_admin: here ROTATE_ATTACH=$ROTATE_ATTACH"
-    debecho "mail_to_admin: here mailopt_over=$mailopt_over"
-    if [ -e $ROTATE_ATTACH ] && [ ! -z "$mailopt_over" ]; then
-      debecho "mail_to_admin: Making attach e-mail message (over)"
-      header_mail over		>$MAILMSG
-      mail_norm	$cosa $cosing	>>$MAILMSG
-      signature			>>$MAILMSG
-      attach_file rotate	>>$MAILMSG
-    elif [ -e $ALL_ATTACH ] && [ ! -z "$mailopt_all" ]; then
-      debecho "mail_to_admin: Making attach e-mail message (all)"
-      header_mail all           >$MAILMSG
-      mail_norm $cosa $cosing   >>$MAILMSG
-      signature                 >>$MAILMSG
-      attach_file all           >>$MAILMSG
-    else
-      debecho "mail_to_admin: Making standard e-mail message"
-      header_mail		>$MAILMSG
-      mail_norm	$cosa $cosing	>>$MAILMSG
-      signature			>>$MAILMSG
-    fi
-    cat $MAILMSG|$mail
-    debecho "mail_to_admin: Sent mail from $fromuser to $touser"
-    return
-  fi
-  )
-}
-
-check_last_rotate () {
-  debecho "check_last_rotate: Checking for $3(ly) config file"
-  if [ ! -f "$1" ]; then
-    debecho "check_last_rotate: Making new control file: $1"
-    echo "0">"$1" 2>/dev/null
-    if [ $? -ne 0 ]; then
-      echo "Can't write to $1"
-      USCITA=$E_CANT_WRITE
-      exit $USCITA
-    fi
-    chmod 600 "$1" 2>/dev/null
-    if [ $? -ne 0 ]; then
-      echo "Can't change permission to file $1"
-      USCITA=$E_NO_CHMOD
-      exit $USCITA
-    fi
-  fi
-
-  if [ -e "$1" ]; then
-    chmod 600 "$1"
-    last="$(cat "$1")"
-    #now="$(date +%s)"
-    date_next="$(date --date "$date_refer +1 $3")"   # "+%d/%m/%Y")"
-    debecho "check_last_rotate: Old date  : $last"
-    debecho "check_last_rotate: New date  : $stamp_now"
-    debecho "check_last_rotate: Next date : $date_next"
-    DIFFDATA=$[ stamp_now - last ];
-    if [ $DIFFDATA -ge $2 ]; then
-      debecho "check_last_rotate: $DIFFDATA >= $2"
-      echo "$stamp_now">"$1"
-      #echo "$date_next">"$1.next"
-      return 1
-    fi
-  fi
-  debecho "check_last_rotate: Rotation not needed: $DIFFDATA < $2"
-  return 0
-}
-
-read_custom() {
-  quale="custom"
-  if [ ! -e $MAINDIR/$quale ]; then
-    debecho "read_custom: Config file '$quale' does not exist"
-    return
-  fi
-  debecho "read_custom: This file will always be read"
-  read_and_do
-
-  if [ "$config_file" = "custom" ]; then
-    [ -e "$TMP_STATFILE" ] && mail_to_admin stat
-    exit $E_NO_ERROR
-  fi
-}
-
-read_daily() {
-
-  quale="daily"
-  if [ ! -e $MAINDIR/$quale ]; then
-    debecho "read_daily: Config file '$quale' does not exist"
-    return
-  fi
-
-  check_last_rotate "$STATDIR/.lastday" 86400 day
-  if [ $? -eq 1 ]; then
-    debecho "read_daily: Rotating daily logfiles"
-    read_and_do
-  fi
-
-  if [ "$config_file" = "day" ]; then
-    [ -e "$TMP_STATFILE" ] && mail_to_admin stat
-    exit $E_NO_ERROR
-  fi
-
-}
-
-read_monthly() {
-
-  quale="monthly"
-  if [ ! -e $MAINDIR/$quale ]; then
-    debecho "read_monthly: Config file '$quale' does not exist"
-    return
-  fi
-  # Comparision time is 28, 29, 30 or 31 days depending on previous
-  # month
-  local days=
-  local comptime=
-  for days in 31 30 29 28; do
-    comptime=$(cal $(date --date "$date_refer -1 month" "+%m %Y")|grep $days)
-    if [ ! -z "$comptime" ]; then
-      comptime=$[ days * 86400 ]
-      break
-    fi
-  done
-
-  check_last_rotate "$STATDIR/.lastmonth" $comptime month
-
-  if [ $? -eq 1 ]; then
-    debecho "read_monthly: Rotating monthly logfiles"
-    read_and_do
-  fi
-  if [ "$config_file" = "month" ]; then
-    [ -e "$TMP_STATFILE" ] && mail_to_admin stat
-    exit $E_NO_ERROR
-  fi
-
-
-}
-
-read_weekly() {
-
-  quale="weekly"
-  if [ ! -e $MAINDIR/$quale ]; then
-    debecho "read_weekly: Config file '$quale' does not exist"
-    return
-  fi
-
-  check_last_rotate "$STATDIR/.lastweek" 604800 week
-
-  if [ $? -eq 1 ]; then
-    debecho "read_weekly: Rotating weekly logfiles"
-    read_and_do
-  fi
-  if [ "$config_file" = "week" ]; then
-    [ -e "$TMP_STATFILE" ] && mail_to_admin stat
-    exit $E_NO_ERROR
-  fi
-
-}
-
-show_defaults () {
-  local VARS="VERSION MAINDIR MAINRC STATDIR DELAYED_FILES DATE_OFFSET \
-              BASE_TMP_DIR DEBUG mail pager follow_symlinks dir_own dir_grp 
-              dir_perm fil_own fil_grp fil_perm tabooext"
-  local V=
-  banner
-  echo
-  echo "Default values for important variables:"
-  echo
-  for V in $VARS; do
-    echo -n "$V="
-    eval echo \$$V
-  done
-  #Alternative :-)
-  # But less flexible...
-  #set|grep "^def_.*="|cut -b 5-
-}
-
-show_log () {
-  debecho "show_log: input pager: pager=$pager -- PAGER=$PAGER"
-  if [ ! -z "$pager" ]; then
-    PAGER="$pager"
-  fi
-  if [ -z "$PAGER" ]; then
-    PAGER=$(which less)
-    if [ -z "$PAGER" ]; then
-      PAGER=$(which more)
-    fi
-    if [ -z "$PAGER" ]; then
-      echo "Can't find a pager! Use pager variable in main rc file or "
-      echo "PAGER environnement variable"
-      USCITA=$E_NO_PAGER
-      exit $USCITA
-    fi
-    if [ ! -x "$PAGER" ]; then
-      echo "Can't exec pager $PAGER!"
-      USCITA=$E_NO_PAGER
-      exit $USCITA
-    fi
-  fi
-  debecho "show_log: Using pager $PAGER"
-  if [ -z "$unpacker" ] || [ -z "$uncompress" ]; then
-    echo "Bad configuration: use unpacker and uncompress variables in mail rc file"
-    USCITA=$E_CANT_UNCOMPRESS
-    exit $USCITA
-  fi
-  if [ $(expr "$1" : ".*\/.*") -ne 0 ]; then
-    rpath=1
-  else
-    rpath=0
-  fi
-  debecho "show_log: Here rpath=$rpath"
-  for quale in custom daily weekly monthly; do
-    if [ -e $MAINDIR/$quale ]; then
-      debecho "show_log: Searching in $quale conffile"
-      read_and_do read_log "$rpath" "$1"
-      if [ "$(cat "$NEWtmpFILE.$extension" 2>/dev/null)" = "$NEWtmpFILE" ]; then
-        USCITA=$BREAK_CYCLE
-        break
-      fi
-    fi
-  done
-  if [ $USCITA -ne $BREAK_CYCLE ]; then
-    echo "Can't find $1"
-    USCITA=$E_FILE_NOFIND
-    exit $USCITA
-  fi
-}
-
-read_log () {
-  local old_pcdpc="$pcdpc"
-  for log in ${pcldr[@]}; do
-    pcdpc="$old_pcdpc"
-    expand_metavar "$log" "$pcdpc"
-    pcdpc="$expanded_metavars"
-    if [ $1 -eq 1 ]; then
-      if [ "${2:0:1}" != "/" ]; then
-        storefile="$packdir/$2"
-      else
-        storefile="$2"
-      fi
-    else
-      storefile="$pcdpc/$2"
-    fi
-    debecho "read_log: Here storefile=$storefile"
-    if [ -r "$storefile" ]; then
-      debecho "read_log: Found $storefile"
-      debecho "read_log: NOCOMPRESS=$NOCOMPRESS; DELAY=$DELAY;"
-      [ ! -z "$DELAY" ] && local c=$(grep "$storefile" $DELAYED_FILES 2>/dev/null)
-      if [ ! -z "$NOCOMPRESS" ] || [ ! -z "$c" ]; then
-        unpacker=cat
-        uncompress=
-        extension="txt"
-      fi
-      cp -f "$storefile" $NEWtmpFILE.$extension
-      if [ ! -r "$NEWtmpFILE.$extension" ]; then
-        echo "Can't read temporary logfile!"
-        USCITA=$E_FILE_NOREAD
-        exit $USCITA
-      fi
-      debecho "read_log: $unpacker $uncompress $NEWtmpFILE.$extension | $PAGER"
-      $unpacker $uncompress "$NEWtmpFILE.$extension" | $PAGER
-      echo "$NEWtmpFILE" >"$NEWtmpFILE.$extension"
-      return $BREAK_CYCLE
-    fi
-  done
-}
-
-findlog () {
-  local log=
-  local q=
-
-  case $quale in
-    monthly)
-            q=month
-            ADD=2592000
-            ;;
-    daily)
-            q=day
-            ADD=86400
-            ;;
-    weekly)
-            q=week
-            ADD=604800
-            ;;
-    custom)
-            #TODO: Show correct informations if logfile is in custom
-            q=custom
-            #ADD=$PERIOD
-            ;;
-  esac
-
-  debecho "findlog: q=$q +++ ADD=$ADD"
-  debecho "findlog: Here pcldr=${pcldr[@]}"
-  for log in ${pcldr[@]}; do
-    if [ "$(basename $log)" = "$1" ]; then
-      
-      echo
-      echo "==============================================================================="
-      echo "Summary of logfile: $(basename $log)"
-      echo "==============================================================================="
-      echo "Full path : $log"
-      echo "Store dir : $pcdpc"
-      #local now=$(date +%s)
-      if [ ! -z "$ADD" ]; then
-        debecho "findlog: Here ADD=$ADD, stamp_now=$stamp_now"
-        local last=$(cat "$STATDIR/.last$q" 2>/dev/null)
-        # Sanity check!
-        if [ $last -lt $ADD ]; then
-          local daydone=0
-          local datedone=$(date "+%a %x")
-          local daytodo=$[ ADD / 86400 ]
-          local datetodo=$(date --date "++$daytodo days" "+%a %x")
-        else
-          local next=$[ last + ADD ]
-          local secsdone=$[ stamp_now - last ]
-          local secstodo=$[ next - stamp_now ]
-          local daydone=$[ secsdone / 86400 ]
-          local daytodo=$[ secstodo / 86400 + 1 ]
-          local datedone=$( date --date "$daydone days ago" "+%a %x")
-          local datetodo=$( date --date "++$daytodo days" "+%a %x")
-        fi
-      else
-        #local datedone=$(cat "$STATDIR/.${log//\//_}.rtt"|grep "^date:"|cut -d':' -f2-)
-        #local secsdone=$(cat "$STATDIR/.${log//\//_}.rtt"|grep "^stamp:"|cut -d':' -f2)
-        local datedone=
-        local secsdone=
-        get_control_info date datedone
-        get_control_info stamp secsdone
-        secsdone=$[ stamp_now - secsdone ]
-        local daydone=$[ secsdone / 86400 ]
-        local datetodo="$PERIOD"
-        local daytodo=
-      fi
-      if [ ! -z "$daytodo" ] && [ "$daytodo" -lt 0 ]; then
-        [ -z "$ROTATE" ] && cosa="archive" || cosa="rotate"
-        printf "\n           WARNING: This file must be ${cosa}d as soon as possible!\n\n"
-      fi
-      echo "Interval  : $quale"
-      [ ! -z "$NOCOMPRESS" ] && local textnot="yes" || local textnot="no"
-      echo "Compress  : $textnot"
-      [ ! -z "$notifempty" ] && textnot="yes" || textnot="no"
-      echo "If empty  : $textnot"
-      [ ! -z "$rotate" ] && textnot="$ROTATE" || textnot="no"
-      echo "Rotate    : $textnot"
-      [ $nomissingok -eq 0 ] && textnot="yes" || textnot="no"
-      echo "Missingok : $textnot"
-      [ ! -z "$createdir" ] && textnot="mode: $dir_perm, own.grp: $dir_own.$dir_grp" \
-                            || textnot="no"
-      echo "Createdir : $textnot"
-      [ ! -z "$nomail" ] && textnot="no" || textnot="yes"
-      echo "Mail admin: $textnot"
-      [ -z "$ADD" ] && echo "Period    : $PERIOD"
-      echo
-      if [ ! -z "$ADD" ]; then
-        printf "Days elapsed from last rotation : %2d (%s)\n" $daydone "$datedone"
-        printf "Days to wait for next rotation  : %2d (%s)\n" $daytodo "$datetodo"
-      else
-        printf "Days elapsed from last rotation : %2d (%s)\n" $daydone "$datedone"
-      fi
-      if [ ! -z "$DELAY" ]; then
-        echo
-        notcomp=$(grep "$1" $DELAYED_FILES 2>/dev/null|cut -d'=' -f2-)
-        echo "Not compressed log: $notcomp"
-      fi
-      echo
-      return $BREAK_CYCLE
-    fi
-  done
-}
-
-fill_timevar () {
-  debecho "fill_timevar: filling time-related variables"
-
-  local string_date=$(LANG=en date -d "$1" "+%s %m %d %Y %H %M %a %b %A %B"|\
-                      tr A-Z a-z)
-
-  set -- $string_date
-  stamp_now=$1
-  today=$3
-  date_now="$2/$3/$4 $5:$6"
-  now_hour=$5
-  now_min=$6
-  name_today=$7
-  name_month=$8
-  long_name_today=$9
-  long_name_month=${10}
-  ldom=$(cal |tail -n 2|head -n 1|rev|cut -d' ' -f1|rev)
 }
 
 # MAIN
 #
 trap 'rm -rf $TEMPDIR $LOCK; exit $USCITA' 0
-
 debecho "MAIN: Filling time base variable"
 date_refer=$(date "+%m/%d/%Y %H:%M:%S")
-
 # Prevent multiple executions of this program at the same time:
 if [ -e $LOCK ]; then
  echo "There is another running rottlog instance."
@@ -3299,11 +3234,9 @@ if [ $# -eq 1 ]; then
 	 ;;
  esac
 fi
-
 make_tmpdir
 read_rcopts "$MAINRC"
 fill_timevar "$date_refer"
-
 if [ $# -ne 0 ]; then
  while [ $# -gt 0 ]; do
   case "$1" in
@@ -3412,10 +3345,8 @@ if [ $# -ne 0 ]; then
  done
  #[ -z "$DONTEXIT" ] && exit $E_NO_ERROR
 fi
-
 read_custom
 read_daily
 read_weekly
 read_monthly
-
 [ -e "$TMP_STATFILE" ] && mail_to_admin stat
