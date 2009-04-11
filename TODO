@@ -1,11 +1,11 @@
-TODO and WISHLIST:
-=================
+TODO LIST:
+=========
 
 If default rc specifies gzip, or bzip2, rottlog doesn't assume the
 extension.  bzip2 and gzip require the extension to function.  Currently,
 METAVARIABLES must specify the extension.  Rottlog should support the
 extension when specified through rc.
 
-/var/log is used for the rc configuration file, though perhaps this
-confuses logrotate vs rottlog behaviour.  Should rottlog have its own
-archive directory?
+PREFIX is /usr/local, but does not allow modification of the prefix
+at configure time.  This should be fixed.
+

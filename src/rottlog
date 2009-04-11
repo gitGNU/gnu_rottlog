@@ -2,7 +2,7 @@
 # GNU Rot[t]log
 # Copyright 2001, 2002, 2003, 2004, 2005 by 
 #   Stefano Falsetto <falsetto@gnu.org>
-# Copyright 2008, 2009 by D E Evans <sinuhe@gnu.org>
+# Copyright 2008, 2009 by David Egan Evans <sinuhe@gnu.org>
 #
 # This program is free software.  You can redistribute it, or modify it,
 # or both, under the terms of the GNU General Public License version 3
@@ -583,6 +583,111 @@ do_rotate() {
    update_stamp $size_b
   fi
  fi
+}
+
+expand_metavar() {
+ # If used two parameters:
+ # First parameter $1 is logfile to be rotated/archived (with path)
+ # Second parameter is string to expand
+ # all metavariables can be expanded
+ #debecho "In expand_metavar:"
+ local tmpstr=
+ local tmpfname=
+
+ debecho "expand_metavar: Filling date-related meta-variables with offset"
+ year=$(date +%Y --date "$date_refer" --date "$DATE_OFFSET days")
+ month=$(date +%m --date "$date_refer" --date "$DATE_OFFSET days")
+ day=$(date +%d --date "$date_refer" --date "$DATE_OFFSET days")
+ if [ $(echo "$SunMon"|tr A-Z a-z) = "sun" ]; then
+  week=$(date +%U --date "$date_refer" --date "$DATE_OFFSET days") # @WEEK (sun)
+ else
+  week=$(date +%W --date "$date_refer" --date "$DATE_OFFSET days") # @WEEK (mon)
+ fi
+
+ if [ "$variables_expanded" != "$1" ]; then
+  bname=$(basename "$1") # @BASENAME
+  bdir=$(dirname "$1") # @DIRNAME
+
+  if [ -z "$NO_EXTENSION" ]; then
+   comp_ext="$extension" # @COMP_EXT
+  else
+   comp_ext=""
+  fi
+ make_tmpdir meta_tmp_dir # @TEMPDIR
+ else
+  debecho "expand_metavar: META-VARIABLES already expanded for this logfile."
+ fi
+
+ # Substitute meta-variables with values:
+ debecho "1=$1"
+ debecho "2=$2"
+ tmpstr="$2"
+ debecho "expand_metavar: tmpstr before modify: $tmpstr"
+ tmpstr=${tmpstr//\@BASENAME/$bname}
+ tmpstr=${tmpstr//\@DIRNAME/$bdir}
+
+ [ -z "$year_based" ] && tmpfname=${tmpstr//\@YEAR/????} || tmpfname=${tmpstr//\@YEAR/$year}
+ [ -z "$month_based" ] && tmpfname=${tmpfname//\@MONTH/??} || tmpfname=${tmpfname//\@MONTH/$month}
+ [ -z "$week_based" ] && tmpfname=${tmpfname//\@WEEK/??} || tmpfname=${tmpfname//\@WEEK/$week}
+ [ -z "$day_based" ] && tmpfname=${tmpfname//\@DAY/??} || tmpfname=${tmpfname//\@DAY/$day}
+ debecho "expand_metavar: now tmpfname=$tmpfname"
+  
+ tmpstr=${tmpstr//\@YEAR/$year}
+ tmpstr=${tmpstr//\@MONTH/$month}
+ tmpstr=${tmpstr//\@DAY/$day}
+
+ #TODO: prima di espandere questa cerco in DELAYED_FILES
+ # Babel Fish says:
+ #TODO: before expanding this I try in DELAYED_FILES
+ tmpstr=${tmpstr//\@COMP_EXT/$comp_ext}
+ tmpstr=${tmpstr//\@TEMPDIR/$meta_tmp_dir}
+ tmpstr=${tmpstr//\@WEEK/$week}
+
+ case "$tmpstr" in
+  *\@[1-9]*)
+   make_metapos "$log"
+   n=10
+  while [ $n -le ${#meta_pos[@]} ]; do
+   j=$[ n - 1 ]
+   mp=${meta_pos[j]}
+   tmpstr=${tmpstr//\@$n/$mp}
+   n=$[ n + 1 ]
+  done
+  n=1
+  while [ $n -le ${#meta_pos[@]} ] && [ $n -le 9 ]; do
+   j=$[ n - 1 ]
+   mp=${meta_pos[j]}
+   tmpstr=${tmpstr//\@$n/$mp}
+   n=$[ n + 1 ]
+  done
+  ;;
+ esac
+
+ # Only if path and filename is already expanded may these two
+ # metavariables be sustituted.
+ if [ $(expr index "$pcdpc" "\@") -eq 0 ]; then
+  case "$tmpstr" in
+   *\@DEF_DIR*)
+    def_path="$pcdpc"
+    tmpstr=${tmpstr//\@DEF_DIR/$pcdpc}
+    ;;
+  esac
+  case "$tmpstr" in
+   *\@NEXT_EXT*|*\@FILENAME*)
+    tmpfname=${tmpfname//\@NEXT_EXT/*}
+    tmpfname=${tmpfname//\@FILENAME/$bname.*}
+    lastnum "$pcdpc/$tmpfname" 1
+    next_ext=$?
+    tmpstr=${tmpstr//\@NEXT_EXT/$next_ext}
+    filename="$bname.$next_ext"
+    tmpstr=${tmpstr//\@FILENAME/$filename}
+    ;;
+  esac
+ fi
+
+ variables_expanded="$1"
+ debecho "expand_metavar: tmpstr after all modifies: $tmpstr"
+ expanded_metavars="$tmpstr"
 }
 
 is_readable() {
@@ -1318,110 +1423,6 @@ update_stamp() {
  fi
 }
 
-
-expand_metavar() {
-  # If used two parameters:
-  # First parameter $1 is logfile to be rotated/archived (with path)
-  # Second parameter is string to expand
-  # all metavariables can be expanded
-  #debecho "In expand_metavar:"
-  local tmpstr=
-  local tmpfname=
-
-  debecho "expand_metavar: Filling date-related meta-variables with offset"
-  year=$(date +%Y --date "$date_refer --date $DATE_OFFSET days")
-  month=$(date +%m --date "$date_refer --date $DATE_OFFSET days")
-  day=$(date +%d --date "$date_refer --date $DATE_OFFSET days")
-  if [ $(echo "$SunMon"|tr A-Z a-z) = "sun" ]; then
-    week=$(date +%U --date "$date_refer --date $DATE_OFFSET days")   # @WEEK (sun)
-  else
-    week=$(date +%W --date "$date_refer --date $DATE_OFFSET days")   # @WEEK (mon)
-  fi
-
-  if [ "$variables_expanded" != "$1" ]; then
-    bname=$(basename "$1")		# @BASENAME
-    bdir=$(dirname "$1")		# @DIRNAME
-
-    if [ -z "$NO_EXTENSION" ]; then
-      comp_ext="$extension"		# @COMP_EXT
-    else
-      comp_ext=""
-    fi
-    make_tmpdir meta_tmp_dir            # @TEMPDIR
-  else
-    debecho "expand_metavar: META-VARIABLES already expanded for this logfile."
-  fi
-  # Substitute meta-variables with values:
-  debecho "1=$1"
-  debecho "2=$2"
-  tmpstr="$2"
-  debecho "expand_metavar: tmpstr before modify: $tmpstr"
-  tmpstr=${tmpstr//\@BASENAME/$bname}
-  tmpstr=${tmpstr//\@DIRNAME/$bdir}
-
-  [ -z "$year_based" ] && tmpfname=${tmpstr//\@YEAR/????} || tmpfname=${tmpstr//\@YEAR/$year}
-  [ -z "$month_based" ] && tmpfname=${tmpfname//\@MONTH/??} || tmpfname=${tmpfname//\@MONTH/$month}
-  [ -z "$week_based" ] && tmpfname=${tmpfname//\@WEEK/??} || tmpfname=${tmpfname//\@WEEK/$week}
-  [ -z "$day_based" ] && tmpfname=${tmpfname//\@DAY/??} || tmpfname=${tmpfname//\@DAY/$day}
-  debecho "expand_metavar: now tmpfname=$tmpfname"
-  
-  tmpstr=${tmpstr//\@YEAR/$year}
-  tmpstr=${tmpstr//\@MONTH/$month}
-  tmpstr=${tmpstr//\@DAY/$day}
-
-  #TODO: prima di espandere questa cerco in DELAYED_FILES
-  tmpstr=${tmpstr//\@COMP_EXT/$comp_ext}
-  tmpstr=${tmpstr//\@TEMPDIR/$meta_tmp_dir}
-  tmpstr=${tmpstr//\@WEEK/$week}
-
-  case "$tmpstr" in
-    *\@[1-9]*)
-                 make_metapos "$log"
-                 n=10
-                 while [ $n -le ${#meta_pos[@]} ]; do
-                   j=$[ n - 1 ]
-                   mp=${meta_pos[j]}
-                   tmpstr=${tmpstr//\@$n/$mp}
-                   n=$[ n + 1 ]
-                 done
-                 n=1
-                 while [ $n -le ${#meta_pos[@]} ] && [ $n -le 9 ]; do
-                   j=$[ n - 1 ]
-                   mp=${meta_pos[j]}
-                   tmpstr=${tmpstr//\@$n/$mp}
-                   n=$[ n + 1 ]
-                 done
-                 ;;
-  esac
-
-  # Only if path and filename is already expanded these two metavariables
-  # can be sustituted.
-  if [ $(expr index "$pcdpc" "\@") -eq 0 ]; then
-    case "$tmpstr" in
-      *\@DEF_DIR*)
-                   def_path="$pcdpc"
-                   tmpstr=${tmpstr//\@DEF_DIR/$pcdpc}
-                   ;;
-    esac
-    case "$tmpstr" in
-      *\@NEXT_EXT*|*\@FILENAME*)
-                   tmpfname=${tmpfname//\@NEXT_EXT/*}
-                   tmpfname=${tmpfname//\@FILENAME/$bname.*}
-                   lastnum "$pcdpc/$tmpfname" 1
-                   next_ext=$?
-                   tmpstr=${tmpstr//\@NEXT_EXT/$next_ext}
-                   filename="$bname.$next_ext"
-                   tmpstr=${tmpstr//\@FILENAME/$filename}
-                   ;;
-    esac
-  fi
-
-  variables_expanded="$1"
-
-  debecho "expand_metavar: tmpstr after all modifies: $tmpstr"
-
-  expanded_metavars="$tmpstr"
-}
 
 analize_logpart () {
   # quanti bytes devono rimanere?

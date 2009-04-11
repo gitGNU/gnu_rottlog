@@ -1,13 +1,23 @@
+Dependencies include:
+
+autoconf
+bash
+coreutils
+gawk
+groff
+texinfo
+
 To install this package:
 
 1. Run ./configure --help
 2. Run ./configure
 3. Run make
 4. Eventually make some documentation with 'ps' or 'pdf' or 'html' targets
-5. Became root and run 'make install'
+5. Become root and, or use sudo to, run 'make install'
 6. Verify /etc/rottlog/{rc,weekly} will work with your system.  Add other
    configurations as necessary.
-7. Add a crontab entry in /etc/cron.d/rottlog (or as root: crontab -e):
+7. Create an archive directory: /srv/rottlog, or /var/log/rottlog, etc.
+8. Add a crontab entry in /etc/cron.d/rottlog (or as root: crontab -e):
 
    30 03 * * * /usr/sbin/rottlog
 

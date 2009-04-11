@@ -1,5 +1,5 @@
-# This should work with gNewSense, GNUstep, BLAG, or any GNU system
-# that uses GNU syslogd (from inetutils).
+# This should work with gNewSense or any GNU system that uses
+# GNU syslogd (inetutils).
 /var/log/messages {
 	sharedscripts
 	postrotate

@@ -1,3 +1,8 @@
+2009.04.11 <sinuhe@gnu.org>
+
+* Fix a bug in expand_metavar
+* Remove default packing directory setting from the default rc.
+
 2009.03.02 <sinuhe@gnu.org>
 
 * Begin cleaning cruft out of rottlog.
