@@ -21,3 +21,5 @@ To install this package:
 
    30 03 * * * /usr/sbin/rottlog
 
+When running make install, /etc/rottlog files will be overwritten.
+
