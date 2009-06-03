@@ -1,7 +1,7 @@
 #!/bin/bash
 # Slackware distribution script
-# Copyright (c) 2003, 2004 Stefano Falsetto <falsetto@gnu.org>
-# Copyright (c) 2008 D E Evans <sinuhe@gnu.org>
+# Copyright 2003, 2004 Stefano Falsetto <falsetto@gnu.org>
+# Copyright 2008 David Egan Evans <sinuhe@gnu.org>
 #
 # This program is free software.  You can redistribute it, or modify it,
 # or both, under the terms of the GNU General Public License version 3
@@ -16,8 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses>.
 #
 
-
-if [ "$(whoami)" != "root" ]; then
+if [ $UID != 0 ]; then
   echo "You must be root!"
   exit
 fi
