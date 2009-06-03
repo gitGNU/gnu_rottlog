@@ -1,8 +1,8 @@
 #!/bin/bash
 #
 # makedist.sh: script to make rottlog release tarball.
-# Copyright (c) 2002, 2003, 2004 Stefano Falsetto <falsetto@gnu.org>
-# Copyright (c) 2008 D E Evans <sinuhe@gnu.org>
+# Copyright 2002, 2003, 2004 Stefano Falsetto <falsetto@gnu.org>
+# Copyright 2008 David Egan Evans <sinuhe@gnu.org>
 #
 # This program is free software.  You can redistribute it, or modify it,
 # or both, under the terms of the GNU General Public License version 3

@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Autoconf script for rottlog.
-# Copyright (c) 2003 Stefano Falsetto <falsetto@gnu.org>
-# Copyright (c) 2008 D E Evans <sinuhe@gnu.org>
+# Copyright 2003 Stefano Falsetto <falsetto@gnu.org>
+# Copyright 2008, 2009 David Egan Evans <sinuhe@gnu.org>
 #
 # This program is free software.  You can redistribute it, or modify it,
 # or both, under the terms of the GNU General Public License version 3
@@ -17,7 +17,7 @@
 #
 
 AC_PREREQ(2.57)
-AC_INIT(rottlog,0.71-devel-20081030,[D E Evans sinuhe@gnu.org])
+AC_INIT(rottlog,0.71.2,[David Egan Evans sinuhe@gnu.org])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/rottlog])
 
