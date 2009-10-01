@@ -1,3 +1,8 @@
+2009.10.01 <sinuhe@gnu.org>
+
+* Remove 0 exit code variable, since this always has the same meaning
+  in the shell..
+
 2009.04.11 <sinuhe@gnu.org>
 
 * Fix a bug in expand_metavar.
