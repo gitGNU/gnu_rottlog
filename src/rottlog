@@ -32,7 +32,6 @@ DEF_TABOO_EXT=".new .rpmorig .rpmsave ,v .swp .rpmnew ~"
 DEBUG=
 
 # Error codes
-E_NO_ERROR=0
 E_FILE_NOREAD=1
 E_SYNTAX_ERROR=2
 E_BAD_LOGPART=3
@@ -1751,7 +1750,7 @@ read_custom() {
  read_and_do
  if [ "$config_file" = "custom" ]; then
   [ -e "$TMP_STATFILE" ] && mail_to_admin stat
-  exit $E_NO_ERROR
+  exit 0
  fi
 }
 
@@ -1768,7 +1767,7 @@ read_daily() {
  fi
  if [ "$config_file" = "day" ]; then
   [ -e "$TMP_STATFILE" ] && mail_to_admin stat
-  exit $E_NO_ERROR
+  exit 0
  fi
 }
 
@@ -1835,7 +1834,7 @@ read_monthly() {
  fi
  if [ "$config_file" = "month" ]; then
   [ -e "$TMP_STATFILE" ] && mail_to_admin stat
-  exit $E_NO_ERROR
+  exit 0
  fi
 }
 
@@ -1948,7 +1947,7 @@ read_weekly() {
  fi
  if [ "$config_file" = "week" ]; then
   [ -e "$TMP_STATFILE" ] && mail_to_admin stat
-  exit $E_NO_ERROR
+  exit 0
  fi
 }
 
@@ -3223,11 +3222,11 @@ if [ $# -eq 1 ]; then
  case "$1" in
   --help|-h)
 	 syntax
-	 exit $E_NO_ERROR
+	 exit 0
 	 ;;
   --version|-V)
 	 banner 1
-	 exit $E_NO_ERROR
+	 exit 0
 	 ;;
   --debug|-d)
 	 DEBUG=1
@@ -3248,12 +3247,12 @@ if [ $# -ne 0 ]; then
 	   show_log "$2"
 	  fi
           shift
-          exit $E_NO_ERROR
+          exit 0
           ;;
    --summary)
           summarize_loginfo "$2"
           shift
-          exit $E_NO_ERROR
+          exit 0
           ;;
    --checkrc)
           shift
@@ -3343,7 +3342,7 @@ if [ $# -ne 0 ]; then
   esac
   shift
  done
- #[ -z "$DONTEXIT" ] && exit $E_NO_ERROR
+ #[ -z "$DONTEXIT" ] && exit 0
 fi
 read_custom
 read_daily
