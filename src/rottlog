@@ -91,6 +91,8 @@ BREAK_CYCLE=255
 
 # Define functions
 #
+
+# See read_and_do
 analize_logpart () {
  # How many bytes must remain?
  qdldl="$1"
@@ -143,6 +145,7 @@ analize_logpart () {
  return 0
 }
 
+# See mail_to_admin
 attach_file() {
  if [ ! -z "$mailopt_zip" ]; then
   echo
@@ -195,6 +198,7 @@ banner() {
  echo
 }
 
+# See parse_period
 checkitem () {
  if [ $(expr " $1 " : ".* $2 .*") -eq 0 ]; then
   echo "Error in bound definition. Token: $2"
@@ -240,6 +244,7 @@ check_last_rotate () {
  return 0
 }
 
+# See parse_period
 check_mwd () {
  local p=$(echo $token|cut -d"$1" -f1)
  get_control_info date date_file
@@ -273,6 +278,7 @@ check_mwd () {
  fi
 }
 
+# See read_and_do
 check_perms () {
  local tmpown
  local tmpgrp
@@ -315,6 +321,7 @@ check_perms () {
  fi
 }
 
+# See Main
 checkrc () {
  while [ $# -ne 0 ]; do
   echo "==========================================================================="
@@ -333,6 +340,7 @@ checkrc () {
  done
 }
 
+# See prepare_rotate
 collate_logfiles () {
  local logname="$(basename $1)"
  local arch_file="$2"
@@ -449,6 +457,7 @@ collate_logfiles () {
  )
 }
 
+# See read_and_do
 collect_log_info () {
  local p=$2
  local find="$1"
@@ -572,6 +581,7 @@ cp_mod_own () {
  fi
 }
 
+# See collate_logfiles
 copy_tree () {
  local destd="$2"
  local lenb=0       # ${#2}
@@ -603,6 +613,7 @@ debecho () {
  fi
 }
 
+# See prepare_rotate
 do_rotate() {
  local TRY_SIZE
  local dbl_qdl
@@ -776,6 +787,7 @@ do_rotate() {
  fi
 }
 
+# See read_and_do
 expand_filenames () {
  # Filename expansion
  local index=0
@@ -950,6 +962,7 @@ expand_metavar() {
  expanded_metavars="$tmpstr"
 }
 
+# See Main
 fill_timevar () {
  debecho "fill_timevar: filling time-related variables"
  local string_date=$(LANG=en date -d "$1" "+%s %m %d %Y %H %M %a %b %A %B"|\
@@ -967,6 +980,7 @@ fill_timevar () {
  ldom=$(cal |tail -n 2|head -n 1|rev|cut -d' ' -f1|rev)
 }
 
+# See summarize_loginfo
 findlog () {
  local log=
  local q=
@@ -1082,6 +1096,7 @@ get_control_info () {
  esac
 }
 
+# See mail_to_admin
 header_mail() {
  echo "From: $fromuser"
  echo "To: $touser"
@@ -1119,6 +1134,7 @@ header_mail() {
  echo
 }
 
+# See expand_filenames
 is_readable() {
  debecho "is_readable: Checking for $1"
  if [ ! -r "$1" ]; then
@@ -1141,6 +1157,7 @@ is_readable() {
  fi
 }
 
+# See expand_filenames
 is_taboo() {
  local taboo
  local tt
@@ -1158,6 +1175,7 @@ is_taboo() {
  return 0
 }
 
+# See expand_filenames
 is_quoted() {
  if [ $(expr index "$1" "\"" ) -eq 0 ]; then
   f=${1// /}
@@ -1166,6 +1184,7 @@ is_quoted() {
  fi
 }
 
+# See expand_filenames
 is_wildcard() {
  local filna="$1"
 
@@ -1199,6 +1218,7 @@ is_wildcard() {
  fi
 }
 
+# See make_storefile and expand_metavar
 lastnum () {
  [ -z "$2" ] && local add=0 || local add=$2
  local crit=$1
@@ -1260,6 +1280,7 @@ lastnum () {
  return $lastnum
 }
 
+# See mail_to_admin
 mail_err() {
  cat <<EOF
 Details of $quale log rotation NOT performed
@@ -1277,6 +1298,7 @@ same error message next time it will try to manage this logfile.
 EOF
 }
 
+# See mail_to_admin
 mail_norm() {
  echo "Details of $quale log rotation performed:"
  echo 
@@ -1311,6 +1333,7 @@ mail_norm() {
  fi
 }
 
+# See mail_to_admin
 mail_stat() {
  source $TMP_STATFILE
  local end_refer=$(date "+%m/%d/%Y %H:%M:%S")
@@ -1436,6 +1459,7 @@ mail_to_admin() {
   )
 }
 
+# See expand_metavar
 make_metapos() {
  local path="$1"
  local startt=0
@@ -1459,6 +1483,7 @@ make_metapos() {
  done
 }
 
+# See expand_metavar and Main
 make_tmpdir () {
  # Following code was taken from:
  # checkinstall v1.4.1 (c) Felipe Eduardo Sanchez Diaz Duran (with changes)
@@ -1537,6 +1562,294 @@ make_storefile () {
  fi
 }
 
+# See prepare_rotate
+parse_period () {
+ local exit_t=
+ local OLDIFS="$IFS"
+ local list_elem_lday="monday tuesday wednesday thursday friday \
+                       saturday sunday"
+ local list_elem_lmonth="january february march april may june july august \
+                         september october november december"
+ local list_elem_sday="mon tue wed thu fri sat sun"
+ local list_elem_smonth="jan feb mar apr may jun jul aug sep oct nov dec"
+
+ local crit=
+ local pieces="$1"
+
+ while [ 0 ]; do
+  local IFS=","
+  local num_cond=1
+  for opt in $pieces; do
+   num_cond=$[ num_cond + 1 ]
+   [ -z "$opt" -o "$opt" = "," ] && continue 
+   local ltoken=0
+   local token=
+   local rest=
+   local first=
+   local NOT=
+   opt=$(echo $opt|tr -s ' ')
+   [ "${opt:0:1}" = " " ] && opt=${opt:1}
+   IFS="$OLDIFS"
+   for token in $opt; do
+    debecho "parse_period: Here token=$token"
+    ltoken=$[ ltoken + ${#token} + 1 ] # +1 per lo spazio tra i tokens
+    rest=${opt:ltoken}
+    if [ "${token:0:1}" = '!' ]; then
+     debecho "parse_period: Operator NOT"
+     NOT='!'
+     token=${token:1}
+     #rest=${opt:ltoken+1}
+    fi
+    case "$token" in
+     *+*)
+      debecho "parse_period: Expanding inline OR operator"
+      lastchar=$[ ${#token} - 1 ]
+      if [ "${token:$[ ${#token} - 1 ]:1}" = '+' ]; then
+       echo "Error in OR definition"
+       exit $E_BAD_OR
+      fi
+      op=$(echo "$token"|cut -d'+' -f1)
+      if [ -z "$op" ]; then
+       echo "Error in OR definition"
+       USCITA=$E_BAD_OR
+       exit $USCITA
+      fi
+      case "$op" in
+       monday|tuesday|wednesday|thursday|friday|\
+       saturday|sunday)
+        local list_elem=$list_elem_lday
+        ;;
+       january|february|march|april|may|june|july|\
+       august|september|october|november|december)
+        local list_elem=$list_elem_lmonth
+        ;;
+       mon|tue|wed|thu|fri|sat|sun)
+        local list_elem=$list_elem_sday
+        ;;
+       jan|feb|mar|apr|may|jun|jul|aug|sep|oct|\
+       nov|dec)
+        local list_elem=$list_elem_smonth
+        ;;
+       *)
+        echo "Error in inline OR definition!"
+        USCITA=$E_BAD_OR
+        exit $USCITA
+        ;;
+      esac
+      allop=${token//+/ }
+      for lop in $allop; do
+       checkitem "$list_elem" "$lop"
+       if [ -z "$NOT" ]; then
+        exit_t="$exit_t, $first $lop $rest"
+       else
+        exit_t="$exit_t $NOT$lop"
+       fi
+      done
+      [ ! -z "$NOT" ] && exit_t="$first $exit_t $rest"
+      ;; # end case on *+*
+     *-*) 
+      debecho "parse_period: Expanding range: $token"
+      local checkminus=$(echo "$token"|cut -d'-' -f3-)
+      if [ ! -z "$checkminus" ]; then
+       echo "Error in range definition!"
+       USCITA=$E_BAD_RANGE
+       exit $USCITA
+      fi
+      case $token in
+       *monday*|*tuesday*|*wednesday*|*thursday*|*friday*|\
+       *saturday*|*sunday*)
+        local default_begin="monday"
+        local default_end="sunday"
+        local list_elem=$list_elem_lday
+        ;;
+       *january*|*february*|*march*|*april*|*may*|*june*|*july*|\
+       *august*|*september*|*october*|*november*|*december*)
+        local default_begin="january"
+        local default_end="december"
+        local list_elem=$list_elem_lmonth
+        ;;
+       *mon*|*tue*|*wed*|*thu*|*fri*|*sat*|*sun*)
+        local default_begin="mon"
+        local default_end="sun"
+        local list_elem=$list_elem_sday
+        ;;
+       *jan*|*feb*|*mar*|*apr*|*may*|*jun*|*jul*|*aug*|*sep*|*oct*|\
+       *nov*|*dec*)
+        local default_begin="jan"
+        local default_end="dec"
+        local list_elem=$list_elem_smonth
+        ;;
+       *)
+        echo "Error in range definition!"
+        USCITA=$E_BAD_RANGE
+        exit $USCITA
+       ;;
+      esac
+      begin_t=$(echo "$token"|cut -d'-' -f1)
+      end_t=$(echo "$token"|cut -d'-' -f2)
+      # If it is a range, begin before -xxx)
+      if [ -z "$begin_t" ]; then
+       local begin_t="$default_begin"
+      fi
+      # If it is a range, end after xxx-
+      if [ -z "$end_t" ]; then
+       local end_t="$default_end"
+      else
+       case "$end_t" in
+        monday|tuesday|wednesday|thursday|friday|saturday|sunday)
+         checkitem "$list_elem_lday" "$begin_t"
+         ;;
+        january|february|march|april|may|june|july|august|\
+        september|october|november|december)
+         checkitem "$list_elem_lmonth" "$begin_t"
+         ;;
+        mon|tue|wed|thu|fri|sat|sun)
+         checkitem "$list_elem_sday" "$begin_t"
+         ;;
+        jan|feb|mar|apr|may|jun|jul|aug|sep|oct|\
+        nov|dec)
+         checkitem "$list_elem_smonth" "$begin_t"
+         ;;
+        *)
+         echo "Error on end range!"
+         USCITA=$E_BAD_RANGE
+         exit $USCITA
+         ;;
+       esac
+      fi
+      # Expanding range xxx-yyy
+      local append=
+      local exit_t=
+      for i in $list_elem; do
+       [ $i = "$begin_t" ] && append=1
+       if [ ! -z "$append" ]; then
+        if [ -z "$NOT" ]; then
+         exit_t="$exit_t, $first $i $rest"
+        else
+         exit_t="$exit_t $NOT$i"
+        fi
+       fi
+       [ $i = "$end_t" ] && append=
+      done
+      [ ! -z "$NOT" ] && exit_t="$first $exit_t $rest"
+      ;; # End case on *-*
+    esac
+    if [ ! -z "$exit_t" ]; then
+     debecho "parse_period: using num_cond=$num_cond in pieces=$pieces"
+     local addpieces=$(echo "$pieces"|cut -d',' -f$num_cond-)
+     if [ -z "$addpieces" ] || [ "$pieces" = "$addpieces" ]; then
+      pieces="$exit_t"
+     else
+      pieces="$exit_t,$addpieces"
+     fi
+     dont_exit=1
+     num_cond=1
+     break 2
+    fi
+    if [ $(expr "$opt" : ".*-.*") -gt $ltoken ] || \
+       [ $(expr "$opt" : ".*+.*") -gt $ltoken ]; then
+     debecho "parse_period: Non yet filling criteria. Waiting for following iteration"
+    else
+     debecho "parse_period: checking token=$token"
+     case $token in
+      # Add HHh and MMm ???
+      0)
+       debecho "parse_period: --> Always"
+       crit="$crit && [ 1 ]"
+       ;;
+      [[:digit:]][[:digit:]]:[[:digit:]][[:digit:]])
+       debecho "parse_period: --> HH:MM"
+       local ch="$(echo $token|cut -d':' -f1)"
+       local cm="$(echo $token|cut -d':' -f2)"
+       if [ $ch -gt 23 ] || [ $cm -gt 59 ]; then
+        echo "Bad time definition!"
+        USCITA=$E_BAD_TIME
+        exit $USCITA
+       fi
+       #Use timestamp??
+       crit="$crit && [ \"$ch:$cm\" $NOT= \"$now_hour:$now_min\" ]"
+       ;;
+      mon|tue|wed|thu|fri|sat|sun)
+       debecho "parse_period: --> abbreviated weekday"
+       local wday="$token"
+       crit="$crit && [ $wday $NOT= $name_today ]"
+       ;;
+      monday|tuesday|wednesday|thursday|friday|saturday|sunday)
+       debecho "parse_period: --> long weekday"
+       local wday="$token"
+       crit="$crit && [ $wday $NOT= $long_name_today ]"
+       ;;
+      jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+       debecho "parse_period: --> abbreviated monthname"
+       local wmonth="$token"
+       crit="$crit && [ $wmonth $NOT= $name_month ]"
+       ;;
+      january|ferbruary|march|april|may|june|july|august|september|\
+      october|november|december)
+       debecho "parse_period: --> long monthname"
+       local wmonth="$token"
+       crit="$crit && [ $wmonth $NOT= $long_name_month ]"
+       ;;
+      [[:digit:]]d|[[:digit:]][[:digit:]]d)
+       debecho "parse_period: --> days period"
+       check_mwd "d"
+       ;;
+      [[:digit:]]w|[[:digit:]][[:digit:]]w)
+       debecho "parse_period: --> weeks period"
+       check_mwd "w"
+       ;;
+      [[:digit:]]M|[[:digit:]][[:digit:]]M)
+       debecho "parse_period: --> month period"
+       check_mwd "M"
+       ;;
+      [[:digit:]]|[[:digit:]][[:digit:]])
+       debecho "parse_period: --> Exact day"
+       if [ $token -gt 31 ]; then
+        echo "There is no month long $token days!"
+        USCITA=$E_BAD_DAY
+        exit $USCITA
+       fi
+       if [ $token -gt $ldom ]; then
+        debecho "parse_period: Adjusting to last day of month"
+        token=$ldom
+       fi
+       if [ -z "$NOT" ]; then
+        crit="$crit && [ $today -eq $token ]"
+       else
+        crit="$crit && [ $today -ne $token ]"
+       fi
+       ;;
+      *)
+       echo "Error in period definition. Token: $token"
+       USCITA=$E_BAD_PERIOD
+       exit $USCITA
+       ;;
+     esac
+    fi
+    if [ -z "$first" ]; then
+     first="$NOT$token"
+    else
+     first="$first $NOT$token"
+    fi
+    NOT=
+   done
+   crit=${crit:4}
+   debecho "parse_period: evaluating:"
+   debecho "parse_period: $crit"
+   eval "if $crit; then update_stamp; return 1; else crit=; fi"
+  done
+  if [ -z $dont_exit ]; then
+   break
+  else
+   dont_exit=
+   exit_t=
+  fi
+  IFS="$OLDIFS"
+ done
+ return 0
+}
+
+# See read_and_do
 prepare_rotate () {
  local orig_pcdpc="$pcdpc"
  for log in ${pcldr[@]}; do
@@ -1705,41 +2018,656 @@ prepare_rotate () {
  fi
 }
 
-remove_from_ctrlfile () {
- # Protect each '/' with '\' : ddd/fff --> ddd\/fff
- local ESCAPED=${1//\//\\/}
- sed -e "/^$ESCAPED/d" $DELAYED_FILES >$NEWtmpFILE
- cat $NEWtmpFILE >$DELAYED_FILES
-}
+read_and_do() {
+ if [ -z "$1" ]; then
+  cmd_exec=( prepare_rotate )
+ else
+  cmd_exec=( $@ )
+ fi
+ debecho "read and do: will execute ${cmd_exec[@]}"
+ sed -e '/^[[:space:]]*#.*/d' -e ' /^$/d' "$MAINDIR/$quale" >$PURGED_FILE
+ (
+  setup_vars
+  debecho "read and do: Here looking for include directive..."
+  cp -p $PURGED_FILE $IFINCLUDE_FILE
+  local filenames=
+  while read ifinclude; do
+   if [ "${ifinclude// */}" = "include" ]; then
+    debecho "read and do: found $ifinclude"
+    ifinclude=${ifinclude//* /}
+    if [ ! -z "$filenames" ]; then
+     filenames="$filenames,\"$ifinclude\""
+    else
+     filenames="$ifinclude"
+    fi
+    debecho "read and do: Now filenames=$filenames"
+   else
+    debecho "read and do: Row not matching: $ifinclude"
+    break
+   fi
+  done <$IFINCLUDE_FILE
+  if [ ! -z "$filenames" ]; then
+   sed -e '/^include*/d' "$IFINCLUDE_FILE" >$PURGED_FILE
+   expand_filenames $filenames
+   debecho "read and do: After expansion pcldr=${pcldr[@]}"
+   for i in ${pcldr[@]}; do
+    debecho "read and do: including $i file..."
+    if [ ! -r "$i" ]; then
+     echo "Can't read $i include file!"
+     USCITA=$E_CONF_NOTFOUND
+     exit $USCITA
+    fi
+    sed -e '/^[[:space:]]*#.*/d' -e ' /^$/d' "$i" >>$PURGED_FILE
+   done
+  fi
+ )
+ EXIT_SUBS=$?
+ if [ $EXIT_SUBS -ne 0 ]; then
+  exit $EXIT_SUBS
+ fi
+ > $HANDLED
+ while read LINEA; do
+  debecho "read and do: Reading $LINEA from $PURGED_FILE"
+  local tmp=${LINEA// /}
+  unset pcldr
+  setup_vars
+  if [ "${tmp:${#tmp}-1}" != "{" ]; then
+   debecho "read and do: Probably common period variable"
+   debecho "read and do: Making new file to be read"
+   cat -s $PURGED_FILE|sed -e '/{/q'|grep -v '{' >$TMP_PERIOD_RC
+   if [ ! -f $TMP_PERIOD_RC ]; then
+    echo "Undefined error in file $MAINDIR/$quale"
+    USCITA=$E_SYNTAX_ERROR
+    exit $USCITA
+   fi
+   debecho "read and do: calling read_rcopts"
+   read_rcopts $TMP_PERIOD_RC write
+   debecho "read and do: excluding global options lines"
+   while [ "${LINEA/{/}" = "$LINEA" ]; do
+    read LINEA
+   done
+   #if [ ]; then
+   #  echo "Syntax error in file $MAINDIR/$quale"
+   #  USCITA=$E_SYNTAX_ERROR
+   #  exit $USCITA
+   #fi
+  fi
+  # If there are multiple files to rotate with same rules
+  filenames="${LINEA/{*/}"
+  debecho "read and do: Parsing options for logfiles"
+  read LINEA
+  (
+   if [ -f $TMP_PERIOD_RC ]; then
+    source $TMP_PERIOD_RC
+   fi
+   while [ "$LINEA" != "}" ]; do
+    # After the first line (containing '{') the syntax is: <keyword> <value>
+    set -- $LINEA
+    debecho "read and do: Analyzing parameters of '$LINEA'"
+    while [ $# -gt 0 ]; do
+     case "$1" in
+      forceday|period)
+       shift
+       if [ "$quale" != "custom" ]; then
+        echo "parameter 'period' can be used only in custom configuration file!"
+        USCITA=$E_BAD_FORCEDAY
+        exit $USCITA
+       fi
+       # Here I can put syntax checking, but no actions must
+       # be performed before expanded filenames.
+       PERIOD="$@"
+       PERIOD=$(echo "$PERIOD"|tr -s ' ')
+       if [ -z "$PERIOD" ]; then
+        echo "No period to be forced!"
+        USCITA=$E_BAD_DAY
+        exit $USCITA
+       fi
+       shift $#
+       ;;
+      collate|tarcollate)
+       COLLATE="${1:0:3}"
+       ;;
+      dateoffset)
+       shift
+       # Days to add or subtract in date-related meta-variables
+       if [ ! -z "$1" ]; then
+        case "${1:0:1}" in
+         +|-)
+          DATE_OFFSET="$1"
+          ;;
+         *)
+          DATE_OFFSET="-$1"
+         ;;
+        esac
+       else
+        echo "No valid offset"
+        USCITA=$E_INVALID_OFFSET
+        exit $USCITA
+       fi
+       ;;
+      firstaction)
+       if [ ! -z "$ACTION" ]; then
+        IGNORE_ACTION=1
+       fi
+       if [ -z "$2" ]; then
+        ACTION_EXIT=0
+       else
+        ACTION_EXIT=$2
+       fi
+       read ACTION
+       read LINEA
+       if [ "$LINEA" != "endaction" ]; then
+        echo "Actions must be only one command line!"
+        USCITA=$E_BAD_SYNACTION
+        exit $USCITA
+       fi
+       if [ -z "$IGNORE_ACTION" ] && [ -z "$DISABLE_SCRIPT" ]; then
+        $ACTION 2>$TMPERR
+        if [ $? -ne $ACTION_EXIT ]; then
+         echo "Error while executing $1"
+         echo "stderr from $LINEA:"
+         cat $TMPERR
+         USCITA=$E_BAD_ACTION
+        fi
+       fi
+       ;;
+      lastaction)
+       if [ -z "$2" ]; then
+        LASTACTION_EXIT=0
+       else
+        LASTACTION_EXIT=$2
+       fi
+       read LASTACTION
+       read LINEA
+       if [ "$LINEA" != "endaction" ]; then
+        echo "Actions must be only one command line!"
+        USCITA=$E_BAD_SYNACTION
+        exit $USCITA
+       fi
+       ;;
+      endaction)
+       echo -n "This keyword must be used after a firstaction/lastaction"
+       echo " definition!"
+       USCITA=$E_BAD_ENDACTION
+       exit $USCITA
+       ;;
+      storedir)
+       if [ ${2:0:1} != "/" ]; then
+        pcdpc="$packdir/$2"
+       else
+        pcdpc="$2"
+       fi
+       shift
+       debecho "read and do: storedir parameter pcdpc=$pcdpc"
+       ;;
+      nostoredir)
+       pcdpc="@DIRNAME"
+       ;;
+      storefile)
+       if [ -z $2 ]; then
+        echo "No store file specified!"
+        USCITA=$E_NO_STORENAME
+        exit $USCITA
+       fi
+       shift
+       local params=$@
+       param_storefile="$params"
+       debecho "read and do: storefile parameter: param_storefile=$param_storefile"
+       ;;
+      dateext)
+       param_storefile="@BASENAME.@NEXT_EXT-@YEAR@MONTH@DAY"
+      ;;
+      logpart)
+       shift
+       # Due to a (probably) buggy 2.03.0(1) bash
+       local params=$@
+       debecho "read and do: params=$params"
+       analize_logpart "$params"
+       if [ $? -eq 0 ]; then
+        shift
+       else
+        echo "Error in logpart parameter!"
+       USCITA=$E_BAD_LOGPART
+        exit $USCITA
+       fi
+       debecho "read and do: logpart parameter: parsing OK"
+       LOGPART=1
+       shift $#
+       ;;
+      nocompress)
+       NOCOMPRESS=1
+       debecho "read and do: using nocompress feature"
+       ;;
+      compress)
+       NOCOMPRESS=
+       debecho "read and do: using compress to overwrite nocompress"
+       ;;
+      postrotate|prerotate)
+       SCRIPTFILE=$TEMPDIR/$1.$$
+       debecho "read and do: Writing $SCRIPTFILE"
+       > $SCRIPTFILE
+       chmod 700 $SCRIPTFILE
+       read LINEA
+       while [ "$LINEA" != "endscript" ]; do
+        debecho "read and do: >>> $LINEA"
+        echo "$LINEA" >>$SCRIPTFILE
+        read LINEA
+       done
+       debecho "read and do: End $SCRIPTFILE"
+       ;;
+      endscript)
+       echo -n "This keyword must be used after a postrotate/prerotate"
+       echo " definition!"
+       USCITA=$E_BAD_ENDSCRIPT
+       exit $USCITA
+       ;;
+      touser)
+       touser="$2"
+       debecho "read and do: touser parameter: touser=$touser"
+       shift
+       ;;
+      create)
+      shift
+      case $# in
+       0)
+        CHMOD=$fil_perm
+        CHOWN=$fil_own
+        CHGRP=$fil_grp
+        ;;
+       1)
+        CHMOD="$1"
+        CHOWN=$fil_own
+        CHGRP=$fil_grp
+        shift
+        ;;
+       2)
+        CHMOD="$1"
+        CHOWN="$2"
+        CHGRP=$fil_grp
+        shift 2
+        ;;
+       3)
+        CHMOD="$1"
+        CHOWN="$2"
+        CHGRP="$3"
+        shift 3
+        ;;
+       *)
+        echo "Error in create parameter!"
+        USCITA=$E_BAD_CREATE
+        exit $USCITA
+        ;;
+      esac
+      debecho "read and do: create parameter: $CHMOD,$CHOWN,$CHGRP"
+      check_perms "$CHMOD" "$CHOWN" "$CHGRP" create
+      ;;
+     delaycompress)
+      DELAY=1
+      debecho "read and do: delaycompress parameter: DELAY=$DELAY"
+      ;;
+     nodelaycompress)
+      DELAY=
+      debecho "read and do: nodelaycompress parameter"
+      ;;
+     ifempty)
+      notifempty=
+      debecho "read and do: ifempty"
+      ;;
+     notifempty)
+      notifempty=1
+      debecho "read and do: notifempty"
+      ;;
+     rotate)
+      if [ -z "$2" ] || [ "$2" -lt 0 ] 2>/dev/null; then
+       echo "Bad rotate parameter"
+       USCITA=$E_BAD_ROTATE
+       exit $USCITA
+      fi
+      ROTATE=$2
+      debecho "read and do: rotate parameter: ROTATE=$ROTATE"
+      shift
+      ;;
+     log_rotate)
+      log_rotate=1
+      ;;
+     create_logrotate)
+      create_logrotate=1
+      ;;
+     size)
+      if [ -z "$2" ]; then
+       echo "no size parameter!"
+       USCITA=$E_BAD_SIZE
+       exit $USCITA
+      fi
+      # Remove last char
+      lensize=${#2}
+      lastchar=${2:$lensize-1}
+      #lensize=$[ lensize - 1 ]
+      case $lastchar in
+       k|K)
+        MULT=1024
+        ;;
+       m|M)
+        MULT=1000000
+        ;;
+       ""|b|B)
+        MULT=1
+        ;;
+       *)
+        debecho "read and do: bad size identifier: assuming bytes"
+        MULT=1
+        lensize=$[ lensize + 1 ]
+        #USCITA=$E_BAD_SIZE
+        #exit $USCITA
+       esac
+       MAXSIZE=${2:0:$lensize-1}
+       if [ $MAXSIZE -lt 0 ]; then
+        echo "bad size parameter: Must be a valid number"
+        USCITA=$E_BAD_SIZE
+        exit $USCITA
+       fi
+       MAXSIZE=$[ MAXSIZE * MULT ]
+       debecho "read and do: size parameter: MAXSIZE=$MAXSIZE"
+       shift
+       ;;
+      nocreate)
+       NOCREATE=1
+       ;;
+      createdir)
+       if [ ! -z "$2" ]; then
+        dir_perm=$2
+        shift
+       fi
+       if [ ! -z "$2" ]; then
+        dir_own=$2
+        shift
+       fi
+       if [ ! -z "$2" ]; then
+        dir_grp=$2
+        shift
+       fi
+       check_perms "$dir_perm" "$dir_own" "$dir_grp" createdir
+       createdir=1
+       ;;
+      append-only)
+       CHATTR=1
+       ;;
+      maxdepth)
+       if [ -z "$2" ] || [ "$2" -lt 0 ] >/dev/null; then
+        echo "Invalid maxdepth!"
+        USCITA=$E_BAD_MAXDEPTH
+        exit $USCITA
+       fi
+       shift
+       MAXDEPTH=$1
+       ;;
+      missingok)
+       #missingok=1
+       nomissingok=0
+       ;;
+      nomissingok)
+       #missingok=0
+       nomissingok=1
+       ;;
+      nosharedscripts)
+       sharedscr=
+       ;;
+      sharedscripts)
+       sharedscr=1
+       ;;
+      mailopt)
+       local check_opt="$2"
+       local loop_opt=
+       check_opt=${check_opt//,/ }
+       check_opt=$(echo "$check_opt"|tr -s ' ')
+       [ "${check_opt:0:1}" = " " ] && check_opt=${check_opt:1}
+       for loop_opt in $check_opt; do
+        case "$loop_opt" in
+         all|a) 
+          mailopt=1
+          mailopt_all=1
+          ;;
+         # RE-add mailopt stat to allow statistical messages
+         # about only one file
+         maillast|overwrite|over)
+          mailopt=2
+          mailopt_over=1
+          ;;
+         zip|ziplast)
+          mailopt=4
+          mailopt_zip=1
+          ;;
+         error|err)
+          mailopt=3
+          mailopt_err=1
+          ;;
+         none|nomail)
+          nomail=1
+          ;;
+         *)
+          echo "Bad mailopt parameter!"
+          USCITA=$E_BAD_MAILOPT
+          exit $USCITA
+          ;;
+        esac
+       done
+       shift
+       ;;
+      maxage)
+       shift
+       if [ -z "$1" ]; then
+        maxage=365
+       else
+        maxage=$1
+        shift
+       fi
+       debecho "read_and_do: maxage=$maxage"
+       #TODO: Add a check??
+       ;;
+      nomail)
+       nomail=1
+       ;;
+      tabooext)
+       TABOO_EXT="$DEF_TABOO_EXT"
+       shift
+       # parse list of taboo extensions
+       tt=$(echo $1)
+       tt=${tt//\"/}
+       if [ ! -z "$tt" ]; then
+        debecho "read_and_do: tabooext is ${tt:0:1}"
+        if [ ${tt:0:1} = "+" ]; then
+         debecho "read_and_do: Adding new patterns to TABOO_EXT"
+         TABOO_EXT="$TABOO_EXT $(echo ${tt:1})"
+         shift
+         TABOO_EXT="$TABOO_EXT $@"
+        else
+         debecho "read_and_do: Substituting default pattern with user defined"
+         TABOO_EXT=$(echo $@)
+        fi
+       fi
+       debecho "read_and_do: new extension list is: $TABOO_EXT"
+       shift $#
+       ;;
+      start)
+       shift
+       if [ -z "$1" ]; then
+        START_ROTATE=$def_start
+       else
+        START_ROTATE=$1
+        shift
+       fi
+       debecho "read_and_do: start=$START_ROTATE"
+       ;;
+      year_based|month_based|week_based|day_based)
+       eval "$1"=1
+       ;;
+      *)
+       echo "Bad parameter!"
+       debecho "read and do: Bad parameter: $1"
+       USCITA=$E_BAD_PARAM
+       exit $USCITA
+       ;;
+     esac
+     shift
+    done # sui campi della riga
+    read LINEA
+   done # sulle righe != }
 
-remove_maxage() {
- if [ ! -s $TMP_ROTTMAXAGE ]; then
+   # SANITY CHECKS
+   if [ -z "$param_storefile" ] && [ ! -z "$default_storefile" ]; then
+    param_storefile="$default_storefile" 
+   fi
+   if [ ! -z "$FORCE_DAY" ]; then
+    # exit from subshell?
+    debecho "read and do: Sanity check: exit from subshell due to FORCE_DAY=$FORCE_DAY"
+    exit
+   fi
+   debecho "read and do: Ignoring nocompress if using delaycompress"
+   if [ ! -z "$NOCOMPRESS" ] && [ -z "$DELAY" ]; then
+    packer="cat"
+    compress=
+   fi
+   if [ -z "$pcdpc" ]; then
+    pcdpc="$packdir"
+   fi
+   if [ ! -z "$LOGPART" ] && [ ! -z "$CHOWN" ]; then
+    echo "create option can't be used with logpart!"
+    USCITA=$E_CANT_CREATE
+    exit $USCITA
+   fi
+   # Meta-variables about time can't be used in storefile if used to rotate too
+   # In reality:
+   # day è da evitare sempre
+   # week è da evitare in monthly e weekly
+   # month è da evitare in monthly
+   # year volendo si può anche non evitare...
+   #if [ ! -z "$ROTATE" ]; then
+   #  #local check="$param_storefile"
+   #  local check=
+   #  local check_orig=
+   #  for check in "$param_storefile" "$pcdpc"; do
+   #    check_orig=$check
+   #    case "$quale" in
+   #      daily)
+   #        local META_TIME="DAY"
+   #           ;;
+   #      weekly)
+   #        local META_TIME="DAY WEEK"
+   #           ;;
+   #      monthly)
+   #        local META_TIME="DAY WEEK MONTH"
+   #           ;;
+   #      *)
+   #        local META_TIME="DAY MONTH YEAR WEEK"
+   #           ;;
+   #    esac
+   #    #local META_TIME="DAY MONTH YEAR WEEK"
+   #    for c in $META_TIME; do
+   #      check=${check//\@$c/}
+   #    done
+   #    if [ "$check" != "$check_orig" ]; then
+   #      META_TIME="@${META_TIME// / @}"
+   #      echo "$META_TIME meta-variables can't be used with rotate parameter"
+   #      echo "in $quale config file!" 
+   #      USCITA=$E_CANT_ROTATE
+   #      exit $USCITA
+   #    fi
+   #  done
+   #fi
+   if [ ! -z "$COLLATE" ]; then
+    if [ "$COLLATE" = "tar" ]; then
+     caction="tarcollate"
+    else
+     caction="collate"
+    fi
+    #This option is compatible only with following options:
+    #  - [no]storedir
+    #  - storefile
+    #  - createdir
+    #  - firstaction/lastaction
+    #  - prerotate/postrotate
+    #  - nocompress
+    #  - touser
+    #  - nomail
+    checkparam="LOGPART CHMOD DELAY ROTATE MAXSIZE NOCREATE CHATTR MAXDEPTH"
+    for check in $checkparam; do
+     if [ ! -z "$(eval echo "\$$check")" ] && [ "$(eval echo "\$$check")" -ne 0 ]; then
+      echo "$caction is not compatible with $check parameter"
+      USCITA=$E_BAD_COLLATE_PARAM
+      exit $USCITA
+     fi
+    done
+   fi
+   if [ "$quale" = "custom" ] && [ -z "$PERIOD" ]; then
+    echo "Each logfile entry in custom config file needs period parameter!"
+    USCITA=$E_BAD_PERIOD
+    exit $USCITA
+   fi
+   # End of sanity check
+   debecho "read_and_do: expanding filenames $filenames"
+   expand_filenames $filenames
+  (
+   if [ -z "$COLLATE" ]; then
+    exit 0
+   fi
+   case $quale in
+    monthly)
+     quale=weekly
+     coll_period=4
+     ;;
+    weekly)
+     quale=daily
+     coll_period=7
+     ;;
+    *)
+     echo "$1 can't be used in period different than monthly or weekly"
+     USCITA=$E_BAD_COLL_PERIOD
+     exit $USCITA
+     ;;
+   esac
+   debecho "read and do: Saving original value of purged_file variable"
+   orig_PURGED_FILE="$PURGED_FILE"
+   PURGED_FILE="$PURGED_FILE.collect"
+   # in un futuro passerò pcldr[@] invece di pcldr[0]
+   # così farò più in fretta a cercare i log da collegare
+   # se modfico anche collect_log_info
+   debecho "read and do: Calling collect_log_info with log=${pcldr[0]} and coll_period=$coll_period"
+   COLLATE=
+   read_and_do collect_log_info "${pcldr[0]}" $coll_period $quale
+   debecho "read and do: Restoring original purged_file variable value..."
+   PURGED_FILE="$orig_PURGED_FILE"
+  )
+  RET_VAL=$?
+  if [ $RET_VAL -ne 0 ]; then
+   exit $RET_VAL
+  fi
+  # call function specified in "$1" with all other parameters
+  ${cmd_exec[@]}
+  EXIT_CODE=$?
+  run_lastaction
+  if [ $EXIT_CODE -ne 0 ]; then
+   exit $EXIT_CODE
+  fi
+  debecho "pread_and_do: Making stat temp file if necessary"
+  if [ ! -z "$mailstats" ]; then
+   update_stats $quale count
+   #update_stats $quale freed
+  fi
+ )
+ USCITA=$?
+ debecho "read and do: Exit from subshell with errorcode: $USCITA"
+ if [ $USCITA -ne 0 ] && [ $USCITA -ne $BREAK_CYCLE ]; then
+  echo "There is an error in read cycle for configuration file $quale"
+  exit $USCITA
+ elif [ $USCITA -eq $BREAK_CYCLE ]; then
   return
  fi
-
- local checktime
- local diffsec
- local diffdays  
-
- while read ff; do
-  checktime=$(date -r "$ff" +%s)
-  diffsec=$[ stamp_now - checktime ]
-  if [ $diffsec -lt 0 ]; then
-   echo "Old logfile newer than new logfile??"
-   return
-  fi
-  diffdays=$[ diffsec / 86400 ]
-  if [ $diffdays -gt $maxage ]; then
-   rm -f "$ff"
-  else
-   return 0
-  fi
- done <$TMP_ROTTMAXAGE
-  
- # TODO: here's the correct place?????
- rm -f $TMP_ROTTMAXAGE
+ #unset pcldr
+ done <$PURGED_FILE
+ rm -f $TMP_PERIOD_RC # TODO: move to a setup routine????
 }
 
+# See Main
 read_custom() {
  quale="custom"
  if [ ! -e $MAINDIR/$quale ]; then
@@ -1754,6 +2682,7 @@ read_custom() {
  fi
 }
 
+# See Main
 read_daily() {
  quale="daily"
  if [ ! -e $MAINDIR/$quale ]; then
@@ -1771,6 +2700,7 @@ read_daily() {
  fi
 }
 
+# See show_log
 read_log () {
  local old_pcdpc="$pcdpc"
  for log in ${pcldr[@]}; do
@@ -1810,6 +2740,7 @@ read_log () {
  done
 }
 
+# See Main
 read_monthly() {
  quale="monthly"
  if [ ! -e $MAINDIR/$quale ]; then
@@ -1838,6 +2769,7 @@ read_monthly() {
  fi
 }
 
+# See read_and_do and Main
 read_rcopts() {
  local tmp_param
  local RC_VARS="packer compress unpacker uncompress extension pager packdir fromuser touser notifempty mail nomail maxdepth follow_symlink nomissingok missingok nocompress ifempty notifempty nocreate createdir dir_perm dir_own dir_grp fil_own fil_grp fil_perm remove_missing default_storefile SunMon mailstats create_logrotate log_rotate nostoredir sharescripts nosharedscripts tabooext maxage"
@@ -1934,6 +2866,7 @@ read_rcopts() {
  fi
 }
 
+# See Main
 read_weekly() {
  quale="weekly"
  if [ ! -e $MAINDIR/$quale ]; then
@@ -1951,7 +2884,44 @@ read_weekly() {
  fi
 }
 
-# NEW VERSION
+# See do_rotate
+remove_from_ctrlfile () {
+ # Protect each '/' with '\' : ddd/fff --> ddd\/fff
+ local ESCAPED=${1//\//\\/}
+ sed -e "/^$ESCAPED/d" $DELAYED_FILES >$NEWtmpFILE
+ cat $NEWtmpFILE >$DELAYED_FILES
+}
+
+# See do_rotate
+remove_maxage() {
+ if [ ! -s $TMP_ROTTMAXAGE ]; then
+  return
+ fi
+
+ local checktime
+ local diffsec
+ local diffdays  
+
+ while read ff; do
+  checktime=$(date -r "$ff" +%s)
+  diffsec=$[ stamp_now - checktime ]
+  if [ $diffsec -lt 0 ]; then
+   echo "Old logfile newer than new logfile??"
+   return
+  fi
+  diffdays=$[ diffsec / 86400 ]
+  if [ $diffdays -gt $maxage ]; then
+   rm -f "$ff"
+  else
+   return 0
+  fi
+ done <$TMP_ROTTMAXAGE
+  
+ # TODO: here's the correct place?????
+ rm -f $TMP_ROTTMAXAGE
+}
+
+# NEW VERSION (See lastnum)
 rotate_logrotate() {
  # Pull down rotated files
 
@@ -2015,6 +2985,7 @@ run_lastaction () {
  fi
 }
 
+# See read_{and_do,rcopts}
 setup_vars () {
  if [ "$1" = "set" ]; then
   def_maxdepth=${MAXDEPTH-0}
@@ -2097,6 +3068,7 @@ setup_vars () {
  # TODO: add mailopt_* ??
 }
 
+# See Main
 show_defaults () {
  local VARS="VERSION MAINDIR MAINRC STATDIR DELAYED_FILES DATE_OFFSET \
              BASE_TMP_DIR DEBUG mail pager follow_symlinks dir_own dir_grp \
@@ -2115,6 +3087,7 @@ show_defaults () {
  #set|grep "^def_.*="|cut -b 5-
 }
 
+# See Main
 show_log () {
  debecho "show_log: input pager: pager=$pager -- PAGER=$PAGER"
  if [ ! -z "$pager" ]; then
@@ -2166,6 +3139,7 @@ show_log () {
  fi
 }
 
+# See mail_to_admin
 signature() {
 cat <<EOF
 
@@ -2176,6 +3150,7 @@ GNU Rot[t]log v.$VERSION
 EOF
 }
 
+# See Main
 summarize_loginfo () {
  # Cycle between daily, weekly, monthly, and custom
  # quando trovo il file in uno di questi tre visualizzo le info ed esco
@@ -2187,6 +3162,7 @@ summarize_loginfo () {
  done
 }
 
+# See Main
 syntax () {
  banner
  echo
@@ -2235,6 +3211,7 @@ update_stamp() {
  fi
 }
 
+# See read_and_do and mail_to_admin
 update_stats() {
  (
   local newc=$(eval echo \$${2}_${1})
@@ -2245,961 +3222,6 @@ update_stats() {
    cp -f $NEW_TMP_STATFILE $TMP_STATFILE
   fi
  )
-}
-
-
-parse_period () {
-  local exit_t=
-  local OLDIFS="$IFS"
-  local list_elem_lday="monday tuesday wednesday thursday friday \
-                        saturday sunday"
-  local list_elem_lmonth="january february march april may june july august \
-                          september october november december"
-  local list_elem_sday="mon tue wed thu fri sat sun"
-  local list_elem_smonth="jan feb mar apr may jun jul aug sep oct nov dec"
-
-  local crit=
-  local pieces="$1"
-
-  while [ 0 ]; do
-    local IFS=","
-    local num_cond=1
-    for opt in $pieces; do
-      num_cond=$[ num_cond + 1 ]
-      [ -z "$opt" -o "$opt" = "," ] && continue 
-      local ltoken=0
-      local token=
-      local rest=
-      local first=
-      local NOT=
-      opt=$(echo $opt|tr -s ' ')
-      [ "${opt:0:1}" = " " ] && opt=${opt:1}
-      IFS="$OLDIFS"
-      for token in $opt; do
-        debecho "parse_period: Here token=$token"
-        ltoken=$[ ltoken + ${#token} + 1 ] # +1 per lo spazio tra i tokens
-        rest=${opt:ltoken}
-        if [ "${token:0:1}" = '!' ]; then
-          debecho "parse_period: Operator NOT"
-          NOT='!'
-          token=${token:1}
-          #rest=${opt:ltoken+1}
-        fi
-        case "$token" in
-          *+*)
-              debecho "parse_period: Expanding inline OR operator"
-              lastchar=$[ ${#token} - 1 ]
-              if [ "${token:$[ ${#token} - 1 ]:1}" = '+' ]; then
-                echo "Error in OR definition"
-                exit $E_BAD_OR
-              fi
-              op=$(echo "$token"|cut -d'+' -f1)
-              if [ -z "$op" ]; then
-                echo "Error in OR definition"
-                USCITA=$E_BAD_OR
-                exit $USCITA
-              fi
-              case "$op" in
-                monday|tuesday|wednesday|thursday|friday|\
-                saturday|sunday)
-                  local list_elem=$list_elem_lday
-                  ;;
-                january|february|march|april|may|june|july|\
-                august|september|october|november|december)
-                  local list_elem=$list_elem_lmonth
-                  ;;
-                mon|tue|wed|thu|fri|sat|sun)
-                  local list_elem=$list_elem_sday
-                  ;;
-                jan|feb|mar|apr|may|jun|jul|aug|sep|oct|\
-                nov|dec)
-                  local list_elem=$list_elem_smonth
-                  ;;
-                *)
-                  echo "Error in inline OR definition!"
-                  USCITA=$E_BAD_OR
-                  exit $USCITA
-                  ;;
-              esac
-              allop=${token//+/ }
-              for lop in $allop; do
-                checkitem "$list_elem" "$lop"
-                if [ -z "$NOT" ]; then
-                  exit_t="$exit_t, $first $lop $rest"
-                else
-                  exit_t="$exit_t $NOT$lop"
-                fi
-              done
-              [ ! -z "$NOT" ] && exit_t="$first $exit_t $rest"
-              ;; # end case on *+*
-          *-*) 
-              debecho "parse_period: Expanding range: $token"
-              local checkminus=$(echo "$token"|cut -d'-' -f3-)
-              if [ ! -z "$checkminus" ]; then
-                echo "Error in range definition!"
-                USCITA=$E_BAD_RANGE
-                exit $USCITA
-              fi
-              case $token in
-                *monday*|*tuesday*|*wednesday*|*thursday*|*friday*|\
-                *saturday*|*sunday*)
-                  local default_begin="monday"
-                  local default_end="sunday"
-                  local list_elem=$list_elem_lday
-                  ;;
-                *january*|*february*|*march*|*april*|*may*|*june*|*july*|\
-                *august*|*september*|*october*|*november*|*december*)
-                  local default_begin="january"
-                  local default_end="december"
-                  local list_elem=$list_elem_lmonth
-                  ;;
-                *mon*|*tue*|*wed*|*thu*|*fri*|*sat*|*sun*)
-                  local default_begin="mon"
-                  local default_end="sun"
-                  local list_elem=$list_elem_sday
-                  ;;
-                *jan*|*feb*|*mar*|*apr*|*may*|*jun*|*jul*|*aug*|*sep*|*oct*|\
-                *nov*|*dec*)
-                  local default_begin="jan"
-                  local default_end="dec"
-                  local list_elem=$list_elem_smonth
-                  ;;
-                *)
-                  echo "Error in range definition!"
-                  USCITA=$E_BAD_RANGE
-                  exit $USCITA
-                  ;;
-              esac
-              begin_t=$(echo "$token"|cut -d'-' -f1)
-              end_t=$(echo "$token"|cut -d'-' -f2)
-              # Se è un range tipo -xxx
-              if [ -z "$begin_t" ]; then
-                local begin_t="$default_begin"
-              fi
-              # Se è un range tipo xxx-
-              if [ -z "$end_t" ]; then
-                local end_t="$default_end"
-              else
-                case "$end_t" in
-                  monday|tuesday|wednesday|thursday|friday|saturday|sunday)
-                       checkitem "$list_elem_lday" "$begin_t"
-                       ;;
-                  january|february|march|april|may|june|july|august|\
-                  september|october|november|december)
-                       checkitem "$list_elem_lmonth" "$begin_t"
-                       ;;
-                  mon|tue|wed|thu|fri|sat|sun)
-                       checkitem "$list_elem_sday" "$begin_t"
-                       ;;
-                  jan|feb|mar|apr|may|jun|jul|aug|sep|oct|\
-                  nov|dec)
-                       checkitem "$list_elem_smonth" "$begin_t"
-                       ;;
-                  *)
-                       echo "Error on end range!"
-                       USCITA=$E_BAD_RANGE
-                       exit $USCITA
-                       ;;
-                esac
-              fi
-              # Expanding range xxx-yyy
-              local append=
-              local exit_t=
-              for i in $list_elem; do
-                [ $i = "$begin_t" ] && append=1
-                if [ ! -z "$append" ]; then
-                  if [ -z "$NOT" ]; then
-                    exit_t="$exit_t, $first $i $rest"
-                  else
-                    exit_t="$exit_t $NOT$i"
-                  fi
-                fi
-                [ $i = "$end_t" ] && append=
-              done
-              [ ! -z "$NOT" ] && exit_t="$first $exit_t $rest"
-              ;;
-          esac # End case on *-*
-  
-          if [ ! -z "$exit_t" ]; then
-            debecho "parse_period: using num_cond=$num_cond in pieces=$pieces"
-            local addpieces=$(echo "$pieces"|cut -d',' -f$num_cond-)
-            if [ -z "$addpieces" ] || [ "$pieces" = "$addpieces" ]; then
-              pieces="$exit_t"
-            else
-              pieces="$exit_t,$addpieces"
-            fi
-            dont_exit=1
-            num_cond=1
-            break 2
-          fi
-
-          # vedo se c'è un - o un + in opt ed è prima di ltoken
-          if [ $(expr "$opt" : ".*-.*") -gt $ltoken ] || \
-             [ $(expr "$opt" : ".*+.*") -gt $ltoken ]; then
-            debecho "parse_period: Non yet filling criteria. Waiting for following iteration"
-          else
-            debecho "parse_period: checking token=$token"
-            case $token in
-            # Add HHh and MMm ???
-              0)
-                  debecho "parse_period: --> Always"
-                  crit="$crit && [ 1 ]"
-                  ;;
-              [[:digit:]][[:digit:]]:[[:digit:]][[:digit:]])
-                  debecho "parse_period: --> HH:MM"
-                  local ch="$(echo $token|cut -d':' -f1)"
-                  local cm="$(echo $token|cut -d':' -f2)"
-                  if [ $ch -gt 23 ] || [ $cm -gt 59 ]; then
-                    echo "Bad time definition!"
-                    USCITA=$E_BAD_TIME
-                    exit $USCITA
-                  fi
-                  #Use timestamp??
-                  crit="$crit && [ \"$ch:$cm\" $NOT= \"$now_hour:$now_min\" ]"
-                  ;;
-              mon|tue|wed|thu|fri|sat|sun)
-                  debecho "parse_period: --> abbreviated weekday"
-                  local wday="$token"
-                  crit="$crit && [ $wday $NOT= $name_today ]"
-                  ;;
-              monday|tuesday|wednesday|thursday|friday|saturday|sunday)
-                  debecho "parse_period: --> long weekday"
-                  local wday="$token"
-                  crit="$crit && [ $wday $NOT= $long_name_today ]"
-                  ;;
-              jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
-                  debecho "parse_period: --> abbreviated monthname"
-                  local wmonth="$token"
-                  crit="$crit && [ $wmonth $NOT= $name_month ]"
-                  ;;
-              january|ferbruary|march|april|may|june|july|august|september|\
-              october|november|december)
-                  debecho "parse_period: --> long monthname"
-                  local wmonth="$token"
-                  crit="$crit && [ $wmonth $NOT= $long_name_month ]"
-                  ;;
-              [[:digit:]]d|[[:digit:]][[:digit:]]d)
-                  debecho "parse_period: --> days period"
-                  check_mwd "d"
-                  ;;
-              [[:digit:]]w|[[:digit:]][[:digit:]]w)
-                  debecho "parse_period: --> weeks period"
-                  check_mwd "w"
-                  ;;
-              [[:digit:]]M|[[:digit:]][[:digit:]]M)
-                  debecho "parse_period: --> month period"
-                  check_mwd "M"
-                  ;;
-              [[:digit:]]|[[:digit:]][[:digit:]])
-                  debecho "parse_period: --> Exact day"
-                  if [ $token -gt 31 ]; then
-                    echo "There is no month long $token days!"
-                    USCITA=$E_BAD_DAY
-                    exit $USCITA
-                  fi
-                  if [ $token -gt $ldom ]; then
-                    debecho "parse_period: Adjusting to last day of month"
-                    token=$ldom
-                  fi
-                  if [ -z "$NOT" ]; then
-                    crit="$crit && [ $today -eq $token ]"
-                  else
-                    crit="$crit && [ $today -ne $token ]"
-                  fi
-                  ;;
-              *)
-                  echo "Error in period definition. Token: $token"
-                  USCITA=$E_BAD_PERIOD
-                  exit $USCITA
-                  ;;
-            esac
-          fi
-          if [ -z "$first" ]; then
-            first="$NOT$token"
-          else
-            first="$first $NOT$token"
-          fi
-          NOT=
-        done
-        crit=${crit:4}
-        debecho "parse_period: evaluating:"
-        debecho "parse_period: $crit"
-        eval "if $crit; then update_stamp; return 1; else crit=; fi"
-      done
-      if [ -z $dont_exit ]; then
-        break
-      else
-        dont_exit=
-        exit_t=
-      fi
-    IFS="$OLDIFS"
-  done
-  return 0
-}
-
-read_and_do() {
-  if [ -z "$1" ]; then
-    cmd_exec=( prepare_rotate )
-  else
-    cmd_exec=( $@ )
-  fi
-  debecho "read and do: will execute ${cmd_exec[@]}"
-  sed -e '/^[[:space:]]*#.*/d' -e ' /^$/d' "$MAINDIR/$quale" >$PURGED_FILE
-  (
-    setup_vars
-    debecho "read and do: Here looking for include directive..."
-    cp -p $PURGED_FILE $IFINCLUDE_FILE
-    local filenames=
-    while read ifinclude; do
-      if [ "${ifinclude// */}" = "include" ]; then
-        debecho "read and do: found $ifinclude"
-        ifinclude=${ifinclude//* /}
-        if [ ! -z "$filenames" ]; then
-          filenames="$filenames,\"$ifinclude\""
-        else
-          filenames="$ifinclude"
-        fi
-        debecho "read and do: Now filenames=$filenames"
-      else
-        debecho "read and do: Row not matching: $ifinclude"
-        break
-      fi
-    done <$IFINCLUDE_FILE
-    if [ ! -z "$filenames" ]; then
-      sed -e '/^include*/d' "$IFINCLUDE_FILE" >$PURGED_FILE
-      expand_filenames $filenames
-      debecho "read and do: After expansion pcldr=${pcldr[@]}"
-      for i in ${pcldr[@]}; do
-        debecho "read and do: including $i file..."
-        if [ ! -r "$i" ]; then
-          echo "Can't read $i include file!"
-          USCITA=$E_CONF_NOTFOUND
-          exit $USCITA
-        fi
-        sed -e '/^[[:space:]]*#.*/d' -e ' /^$/d' "$i" >>$PURGED_FILE
-      done
-    fi
-  )
-  EXIT_SUBS=$?
-  if [ $EXIT_SUBS -ne 0 ]; then
-    exit $EXIT_SUBS
-  fi
-  > $HANDLED
-
-  while read LINEA; do
-    debecho "read and do: Reading $LINEA from $PURGED_FILE"
-    local tmp=${LINEA// /}
-    unset pcldr
-
-    setup_vars
-
-    if [ "${tmp:${#tmp}-1}" != "{" ]; then
-      debecho "read and do: Probably common period variable"
-      debecho "read and do: Making new file to be read"
-      cat -s $PURGED_FILE|sed -e '/{/q'|grep -v '{' >$TMP_PERIOD_RC
-      if [ ! -f $TMP_PERIOD_RC ]; then
-        echo "Undefined error in file $MAINDIR/$quale"
-        USCITA=$E_SYNTAX_ERROR
-        exit $USCITA
-      fi
-      debecho "read and do: calling read_rcopts"
-      read_rcopts $TMP_PERIOD_RC write
-      debecho "read and do: excluding global options lines"
-      while [ "${LINEA/{/}" = "$LINEA" ]; do
-        read LINEA
-      done
-      #if [ ]; then
-      #  echo "Syntax error in file $MAINDIR/$quale"
-      #  USCITA=$E_SYNTAX_ERROR
-      #  exit $USCITA
-      #fi
-    fi
-    # If there are multiple files to rotate with same rules
-    filenames="${LINEA/{*/}"
-    debecho "read and do: Parsing options for logfiles"
-    read LINEA
-    (
-    if [ -f $TMP_PERIOD_RC ]; then
-      source $TMP_PERIOD_RC
-    fi
-    while [ "$LINEA" != "}" ]; do
-      # Dopo la prima riga (contenente { ) si analizzano le successive
-      # la sintassi è: <parola-chiave> <valore>
-
-      set -- $LINEA
-      debecho "read and do: Analyzing parameters of '$LINEA'"
-      while [ $# -gt 0 ]; do
-        case "$1" in
-          forceday|period)
-               shift
-               if [ "$quale" != "custom" ]; then
-                 echo "parameter 'period' can be used only in custom configuration file!"
-                 USCITA=$E_BAD_FORCEDAY
-                 exit $USCITA
-               fi
-               # Here I can put syntax checking, but no actions must
-               # be performed before expanded filenames.
-               PERIOD="$@"
-               PERIOD=$(echo "$PERIOD"|tr -s ' ')
-               if [ -z "$PERIOD" ]; then
-                 echo "No period to be forced!"
-                 USCITA=$E_BAD_DAY
-                 exit $USCITA
-               fi
-               shift $#
-               ;;
-          collate|tarcollate)
-               COLLATE="${1:0:3}"
-               ;;
-          dateoffset)
-               shift
-               # Days to add or subtract in date-related meta-variables
-               if [ ! -z "$1" ]; then
-                 case "${1:0:1}" in
-                   +|-)
-                     DATE_OFFSET="$1"
-                     ;;
-                   *)
-                     DATE_OFFSET="-$1"
-                     ;;
-                 esac
-               else
-                 echo "No valid offset"
-                 USCITA=$E_INVALID_OFFSET
-                 exit $USCITA
-               fi
-               ;;
-          firstaction)
-               if [ ! -z "$ACTION" ]; then
-                 IGNORE_ACTION=1
-               fi
-               if [ -z "$2" ]; then
-                 ACTION_EXIT=0
-               else
-                 ACTION_EXIT=$2
-               fi
-               read ACTION
-               read LINEA
-               if [ "$LINEA" != "endaction" ]; then
-                 echo "Actions must be only one command line!"
-                 USCITA=$E_BAD_SYNACTION
-                 exit $USCITA
-               fi
-               if [ -z "$IGNORE_ACTION" ] && [ -z "$DISABLE_SCRIPT" ]; then
-                 $ACTION 2>$TMPERR
-                 if [ $? -ne $ACTION_EXIT ]; then
-                   echo "Error while executing $1"
-                   echo "stderr from $LINEA:"
-                   cat $TMPERR
-                   USCITA=$E_BAD_ACTION
-                 fi
-               fi
-               ;;
-          lastaction)
-               if [ -z "$2" ]; then
-                 LASTACTION_EXIT=0
-               else
-                 LASTACTION_EXIT=$2
-               fi
-               read LASTACTION
-               read LINEA
-               if [ "$LINEA" != "endaction" ]; then
-                 echo "Actions must be only one command line!"
-                 USCITA=$E_BAD_SYNACTION
-                 exit $USCITA
-               fi
-               ;;
-          endaction)
-               echo -n "This keyword must be used after a firstaction/lastaction"
-               echo " definition!"
-               USCITA=$E_BAD_ENDACTION
-               exit $USCITA
-               ;;
-          storedir)
-               if [ ${2:0:1} != "/" ]; then
-                 pcdpc="$packdir/$2"
-               else
-                 pcdpc="$2"
-               fi
-               shift
-               debecho "read and do: storedir parameter pcdpc=$pcdpc"
-               ;;
-          nostoredir)
-               pcdpc="@DIRNAME"
-               ;;
-          storefile)
-               if [ -z $2 ]; then
-                 echo "No store file specified!"
-                 USCITA=$E_NO_STORENAME
-                 exit $USCITA
-               fi
-               shift
-               local params=$@
-               param_storefile="$params"
-               debecho "read and do: storefile parameter: param_storefile=$param_storefile"
-               ;;
-          dateext)
-               param_storefile="@BASENAME.@NEXT_EXT-@YEAR@MONTH@DAY"
-               ;;
-          logpart)
-               shift
-               # Due to a (probably) buggy 2.03.0(1) bash
-               local params=$@
-               debecho "read and do: params=$params"
-               analize_logpart "$params"
-               if [ $? -eq 0 ]; then
-                 shift
-               else
-                 echo "Error in logpart parameter!"
-                 USCITA=$E_BAD_LOGPART
-                 exit $USCITA
-               fi
-               debecho "read and do: logpart parameter: parsing OK"
-               LOGPART=1
-               shift $#
-               ;;
-          nocompress)
-               NOCOMPRESS=1
-               debecho "read and do: using nocompress feature"
-               ;;
-          compress)
-               NOCOMPRESS=
-               debecho "read and do: using compress to overwrite nocompress"
-               ;;
-          postrotate|prerotate)
-               SCRIPTFILE=$TEMPDIR/$1.$$
-               debecho "read and do: Writing $SCRIPTFILE"
-               > $SCRIPTFILE
-               chmod 700 $SCRIPTFILE
-               read LINEA
-               while [ "$LINEA" != "endscript" ]; do
-                 debecho "read and do: >>> $LINEA"
-                 echo "$LINEA" >>$SCRIPTFILE
-                 read LINEA
-               done
-               debecho "read and do: End $SCRIPTFILE"
-               ;;
-          endscript)
-               echo -n "This keyword must be used after a postrotate/prerotate"
-               echo " definition!"
-               USCITA=$E_BAD_ENDSCRIPT
-               exit $USCITA
-               ;;
-          touser)
-               touser="$2"
-               debecho "read and do: touser parameter: touser=$touser"
-               shift
-               ;;
-          create)
-               shift
-               case $# in
-                 0)
-                   CHMOD=$fil_perm
-                   CHOWN=$fil_own
-                   CHGRP=$fil_grp
-                   ;;
-                 1)
-                   CHMOD="$1"
-                   CHOWN=$fil_own
-                   CHGRP=$fil_grp
-                   shift
-                   ;;
-                 2)
-                   CHMOD="$1"
-                   CHOWN="$2"
-                   CHGRP=$fil_grp
-                   shift 2
-                   ;;
-                 3)
-                   CHMOD="$1"
-                   CHOWN="$2"
-                   CHGRP="$3"
-                   shift 3
-                   ;;
-                 *)
-                   echo "Error in create parameter!"
-                   USCITA=$E_BAD_CREATE
-                   exit $USCITA
-                   ;;
-               esac
-               debecho "read and do: create parameter: $CHMOD,$CHOWN,$CHGRP"
-               check_perms "$CHMOD" "$CHOWN" "$CHGRP" create
-               ;;
-          delaycompress)
-               DELAY=1
-               debecho "read and do: delaycompress parameter: DELAY=$DELAY"
-               ;;
-          nodelaycompress)
-               DELAY=
-               debecho "read and do: nodelaycompress parameter"
-               ;;
-          ifempty)
-               notifempty=
-               debecho "read and do: ifempty"
-               ;;
-          notifempty)
-               notifempty=1
-               debecho "read and do: notifempty"
-               ;;
-          rotate)
-               if [ -z "$2" ] || [ "$2" -lt 0 ] 2>/dev/null; then
-                 echo "Bad rotate parameter"
-                 USCITA=$E_BAD_ROTATE
-                 exit $USCITA
-               fi
-               ROTATE=$2
-               debecho "read and do: rotate parameter: ROTATE=$ROTATE"
-               shift
-               ;;
-          log_rotate)
-               log_rotate=1
-               ;;
-          create_logrotate)
-               create_logrotate=1
-               ;;
-          size)
-               if [ -z "$2" ]; then
-                 echo "no size parameter!"
-                 USCITA=$E_BAD_SIZE
-                 exit $USCITA
-               fi
-               # Remove last char
-               lensize=${#2}
-               lastchar=${2:$lensize-1}
-               #lensize=$[ lensize - 1 ]
-               case $lastchar in
-                 k|K)
-                   MULT=1024
-                   ;;
-                 m|M)
-                   MULT=1000000
-                   ;;
-                 ""|b|B)
-                   MULT=1
-                   ;;
-                 *)
-                   debecho "read and do: bad size identifier: assuming bytes"
-                   MULT=1
-                   lensize=$[ lensize + 1 ]
-                   #USCITA=$E_BAD_SIZE
-                   #exit $USCITA
-               esac
-               MAXSIZE=${2:0:$lensize-1}
-               if [ $MAXSIZE -lt 0 ]; then
-                 echo "bad size parameter: Must be a valid number"
-                 USCITA=$E_BAD_SIZE
-                 exit $USCITA
-               fi
-               MAXSIZE=$[ MAXSIZE * MULT ]
-               debecho "read and do: size parameter: MAXSIZE=$MAXSIZE"
-               shift
-               ;;
-          nocreate)
-               NOCREATE=1
-               ;;
-          createdir)
-               if [ ! -z "$2" ]; then
-                 dir_perm=$2
-                 shift
-               fi
-               if [ ! -z "$2" ]; then
-                 dir_own=$2
-                 shift
-               fi
-               if [ ! -z "$2" ]; then
-                 dir_grp=$2
-                 shift
-               fi
-               check_perms "$dir_perm" "$dir_own" "$dir_grp" createdir
-               createdir=1
-               ;;
-          append-only)
-               CHATTR=1
-               ;;
-          maxdepth)
-               if [ -z "$2" ] || [ "$2" -lt 0 ] >/dev/null; then
-                 echo "Invalid maxdepth!"
-                 USCITA=$E_BAD_MAXDEPTH
-                 exit $USCITA
-               fi
-               shift
-               MAXDEPTH=$1
-               ;;
-          missingok)
-               #missingok=1
-               nomissingok=0
-               ;;
-          nomissingok)
-               #missingok=0
-               nomissingok=1
-               ;;
-          nosharedscripts)
-               sharedscr=
-               ;;
-          sharedscripts)
-               sharedscr=1
-               ;;
-          mailopt)
-               local check_opt="$2"
-               local loop_opt=
-               check_opt=${check_opt//,/ }
-               check_opt=$(echo "$check_opt"|tr -s ' ')
-               [ "${check_opt:0:1}" = " " ] && check_opt=${check_opt:1}
-               for loop_opt in $check_opt; do
-                 case "$loop_opt" in
-                   all|a) 
-                         mailopt=1
-                         mailopt_all=1
-                         ;;
-                   # RE-add mailopt stat to allow statistical messages
-                   # about only one file
-                   maillast|overwrite|over)
-                         mailopt=2
-                         mailopt_over=1
-                         ;;
-                   zip|ziplast)
-                         mailopt=4
-                         mailopt_zip=1
-                         ;;
-                   error|err)
-                         mailopt=3
-                         mailopt_err=1
-                         ;;
-                   none|nomail)
-                         nomail=1
-                         ;;
-                   *)
-                         echo "Bad mailopt parameter!"
-                         USCITA=$E_BAD_MAILOPT
-                         exit $USCITA
-                         ;;
-                 esac
-               done
-               shift
-               ;;
-          maxage)
-               shift
-               if [ -z "$1" ]; then
-                 maxage=365
-               else
-                 maxage=$1
-                 shift
-               fi
-               debecho "read_and_do: maxage=$maxage"
-               #TODO: Add a check??
-               ;;
-          nomail)
-               nomail=1
-               ;;
-          tabooext)
-               TABOO_EXT="$DEF_TABOO_EXT"
-               shift
-               # parse list of taboo extensions
-               tt=$(echo $1)
-               tt=${tt//\"/}
-               if [ ! -z "$tt" ]; then
-                 debecho "read_and_do: tabooext is ${tt:0:1}"
-                 if [ ${tt:0:1} = "+" ]; then
-                   debecho "read_and_do: Adding new patterns to TABOO_EXT"
-                   TABOO_EXT="$TABOO_EXT $(echo ${tt:1})"
-                   shift
-                   TABOO_EXT="$TABOO_EXT $@"
-                 else
-                   debecho "read_and_do: Substituting default pattern with user defined"
-                   TABOO_EXT=$(echo $@)
-                 fi
-               fi
-               debecho "read_and_do: new extension list is: $TABOO_EXT"
-               shift $#
-               ;;
-          start)
-               shift
-               if [ -z "$1" ]; then
-                 START_ROTATE=$def_start
-               else
-                 START_ROTATE=$1
-                 shift
-               fi
-               debecho "read_and_do: start=$START_ROTATE"
-               ;;
-          year_based|month_based|week_based|day_based)
-               eval "$1"=1
-               ;;
-          *)
-               echo "Bad parameter!"
-               debecho "read and do: Bad parameter: $1"
-               USCITA=$E_BAD_PARAM
-               exit $USCITA
-               ;;
-        esac
-        shift
-      done # sui campi della riga
-      read LINEA
-    done # sulle righe != }
-
-    # SANITY CHECKS
-    if [ -z "$param_storefile" ] && [ ! -z "$default_storefile" ]; then
-       param_storefile="$default_storefile" 
-    fi
-    if [ ! -z "$FORCE_DAY" ]; then
-      # exit from subshell?
-      debecho "read and do: Sanity check: exit from subshell due to FORCE_DAY=$FORCE_DAY"
-      exit
-    fi
-
-    # se c'è delaycompress si ignora nocompress
-    debecho "read and do: Ignoring nocompress if using delaycompress"
-    if [ ! -z "$NOCOMPRESS" ] && [ -z "$DELAY" ]; then
-      packer="cat"
-      compress=
-    fi
-    if [ -z "$pcdpc" ]; then
-      pcdpc="$packdir"
-    fi
-    if [ ! -z "$LOGPART" ] && [ ! -z "$CHOWN" ]; then
-      echo "create option can't be used with logpart!"
-      USCITA=$E_CANT_CREATE
-      exit $USCITA
-    fi
-    # Meta-variables about time can't be used in storefile if is used rotate too
-    # In realtà:
-    # day è da evitare sempre
-    # week è da evitare in monthly e weekly
-    # month è da evitare in monthly
-    # year volendo si può anche non evitare...
-    #if [ ! -z "$ROTATE" ]; then
-    #  #local check="$param_storefile"
-    #  local check=
-    #  local check_orig=
-    #  for check in "$param_storefile" "$pcdpc"; do
-    #    check_orig=$check
-    #    case "$quale" in
-    #      daily)
-    #        local META_TIME="DAY"
-    #           ;;
-    #      weekly)
-    #        local META_TIME="DAY WEEK"
-    #           ;;
-    #      monthly)
-    #        local META_TIME="DAY WEEK MONTH"
-    #           ;;
-    #      *)
-    #        local META_TIME="DAY MONTH YEAR WEEK"
-    #           ;;
-    #    esac
-    #    #local META_TIME="DAY MONTH YEAR WEEK"
-    #    for c in $META_TIME; do
-    #      check=${check//\@$c/}
-    #    done
-    #    if [ "$check" != "$check_orig" ]; then
-    #      META_TIME="@${META_TIME// / @}"
-    #      echo "$META_TIME meta-variables can't be used with rotate parameter"
-    #      echo "in $quale config file!" 
-    #      USCITA=$E_CANT_ROTATE
-    #      exit $USCITA
-    #    fi
-    #  done
-    #fi
-    if [ ! -z "$COLLATE" ]; then
-       if [ "$COLLATE" = "tar" ]; then
-         caction="tarcollate"
-       else
-         caction="collate"
-       fi
-       #This option is compatible only with following options:
-       #  - [no]storedir
-       #  - storefile
-       #  - createdir
-       #  - firstaction/lastaction
-       #  - prerotate/postrotate
-       #  - nocompress
-       #  - touser
-       #  - nomail
-       checkparam="LOGPART CHMOD DELAY ROTATE MAXSIZE NOCREATE CHATTR MAXDEPTH"
-       for check in $checkparam; do
-         if [ ! -z "$(eval echo "\$$check")" ] && [ "$(eval echo "\$$check")" -ne 0 ]; then
-           echo "$caction is not compatible with $check parameter"
-           USCITA=$E_BAD_COLLATE_PARAM
-           exit $USCITA
-         fi
-       done
-    fi
-    if [ "$quale" = "custom" ] && [ -z "$PERIOD" ]; then
-      echo "Each logfile entry in custom config file needs period parameter!"
-      USCITA=$E_BAD_PERIOD
-      exit $USCITA
-    fi
-
-    # End of sanity check
-
-    debecho "read_and_do: expanding filenames $filenames"
-    expand_filenames $filenames
-
-    (
-    if [ -z "$COLLATE" ]; then
-      exit 0
-    fi
-      case $quale in
-        monthly)
-          quale=weekly
-          coll_period=4
-          ;;
-        weekly)
-          quale=daily
-          coll_period=7
-          ;;
-        *)
-          echo "$1 can't be used in period different than monthly or weekly"
-          USCITA=$E_BAD_COLL_PERIOD
-          exit $USCITA
-          ;;
-      esac
-      debecho "read and do: Saving original value of purged_file variable"
-      orig_PURGED_FILE="$PURGED_FILE"
-      PURGED_FILE="$PURGED_FILE.collect"
-      # in un futuro passerò pcldr[@] invece di pcldr[0]
-      # così farò più in fretta a cercare i log da collegare
-      # se modfico anche collect_log_info
-      debecho "read and do: Calling collect_log_info with log=${pcldr[0]} and coll_period=$coll_period"
-      COLLATE=
-      read_and_do collect_log_info "${pcldr[0]}" $coll_period $quale
-      debecho "read and do: Restoring original purged_file variable value..."
-      PURGED_FILE="$orig_PURGED_FILE"
-    )
-    RET_VAL=$?
-    if [ $RET_VAL -ne 0 ]; then
-      exit $RET_VAL
-    fi
-
-    # call function specified in "$1" with all other parameters
-    ${cmd_exec[@]}
-    EXIT_CODE=$?
-
-    run_lastaction
-
-    if [ $EXIT_CODE -ne 0 ]; then
-      exit $EXIT_CODE
-    fi
-
-    debecho "pread_and_do: Making stat temp file if necessary"
-    
-    if [ ! -z "$mailstats" ]; then
-      update_stats $quale count
-      #update_stats $quale freed
-    fi
-
-    )
-    USCITA=$?
-    debecho "read and do: Exit from subshell with errorcode: $USCITA"
-    if [ $USCITA -ne 0 ] && [ $USCITA -ne $BREAK_CYCLE ]; then
-      echo "There is an error in read cycle for configuration file $quale"
-      exit $USCITA
-    elif [ $USCITA -eq $BREAK_CYCLE ]; then
-      return
-    fi
-    #unset pcldr
-  done <$PURGED_FILE
-  rm -f $TMP_PERIOD_RC # TODO: move to a setup routine????
 }
 
 # MAIN
