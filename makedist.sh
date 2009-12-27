@@ -88,8 +88,6 @@ mkdir -p tmp/$MAINPRG-$VERSION
 mkdir -p tmp/$MAINPRG-$VERSION/src
 mkdir -p tmp/$MAINPRG-$VERSION/rc
 mkdir -p tmp/$MAINPRG-$VERSION/doc
-mkdir -p tmp/$MAINPRG-$VERSION/doc/man
-mkdir -p tmp/$MAINPRG-$VERSION/doc/texinfo
 
 cat -s FILES |grep -v  "^#"|while read i; do
 cp -rv ./$i tmp/$MAINPRG-$VERSION/$i

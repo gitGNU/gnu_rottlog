@@ -147,64 +147,53 @@ analize_logpart () {
 
 # See mail_to_admin
 attach_file() {
- if [ ! -z "$mailopt_zip" ]; then
-  echo
-  echo "--1yeeQ81UyVL57Vl7"
-  echo "Content-Type: application/x-tgz; name=\"$storefile\""
-  echo "Content-Transfer-Encoding: base64"
-  echo "Content-Disposition: attachment; filename=\"$storefile\""
-  echo
-  if [ "$1" = "rotate" ]; then
-   mimencode $ROTATE_ATTACH
-  elif [ "$1" = "all" ]; then
-   mimencode $ALL_ATTACH
-  fi
- else
-  echo
-  echo "--1yeeQ81UyVL57Vl7"
-  echo "Content-Type: text/plain; charset=us-ascii"
-  echo "Content-Disposition: attachment; filename=\"$storefile\""
-  echo "Content-Transfer-Encoding: 8bit"
-  echo
-  if [ "$1" = "rotate" ]; then
-   cat $ROTATE_ATTACH
-  elif [ "$1" = "all" ]; then
-   cat $ALL_ATTACH
-  fi
- fi
+	if [ ! -z "$mailopt_zip" ]; then
+		echo
+		echo "--1yeeQ81UyVL57Vl7"
+		echo "Content-Type: application/x-tgz; name=\"$storefile\""
+		echo "Content-Transfer-Encoding: base64"
+		echo "Content-Disposition: attachment; filename=\"$storefile\""
+		echo
+		if [ "$1" = "rotate" ]; then
+			mimencode $ROTATE_ATTACH
+			elif [ "$1" = "all" ]; then
+			mimencode $ALL_ATTACH
+		fi
+	else
+		echo
+		echo "--1yeeQ81UyVL57Vl7"
+		echo "Content-Type: text/plain; charset=us-ascii"
+		echo "Content-Disposition: attachment; filename=\"$storefile\""
+		echo "Content-Transfer-Encoding: 8bit"
+		echo
+		if [ "$1" = "rotate" ]; then
+			cat $ROTATE_ATTACH
+		elif [ "$1" = "all" ]; then
+			cat $ALL_ATTACH
+		fi
+	fi
 }
 
 banner() {
- echo "This is GNU Rot[t]log ver $VERSION"
- echo "Copyright 2001, 2002, 2003, 2004, 2005 by"
- echo " Stefano Falsetto <falsetto@gnu.org>"
- echo "Copyright 2008, 2009 David Egan Evans <sinuhe@gnu.org>"
- echo "GNU Rot[t]log comes with ABSOLUTELY NO WARRANTY"
- if [ -z $1 ]; then
-  return
- fi
- echo
- echo "This program is free software.  You can redistribute it, or modify it,"
- echo "or both, under the terms of the GNU General Public License version 3"
- echo '(or any later version) as published by the Free Software Foundation.'
- echo
- echo "This program is distributed in the hope that it will be useful,"
- echo "WITHOUT ANY WARRANTY; without even the implied warranty of"
- echo "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU"
- echo "General Public License for more details."
- echo
- echo "You should have received a copy of the GNU General Public License"
- echo "along with this program.  If not, see <http://www.gnu.org/licenses>."
- echo
+	echo "GNU Rot[t]log $VERSION"
+	echo "Copyright 2005 Stefano Falsetto <falsetto@gnu.org>"
+	echo "Copyright 2009 David Egan Evans <sinuhe@gnu.org>"
+	if [ -z $1 ]; then
+		return
+	fi
+	echo "License: GPLv3+ <http://gnu.org/licenses/gpl.html>"
+	echo "This is free software: you are free to change and redistribute it."
+	echo "There is NO WARRANTY, to the extent permitted by law."
+	echo
 }
 
 # See parse_period
 checkitem () {
- if [ $(expr " $1 " : ".* $2 .*") -eq 0 ]; then
-  echo "Error in bound definition. Token: $2"
-  USCITA=$E_BAD_RANGE
-  exit $USCITA
- fi
+	if [ $(expr " $1 " : ".* $2 .*") -eq 0 ]; then
+		echo "Error in bound definition. Token: $2"
+		USCITA=$E_BAD_RANGE
+		exit $USCITA
+	fi
 }
 
 check_last_rotate () {
@@ -323,21 +312,22 @@ check_perms () {
 
 # See Main
 checkrc () {
- while [ $# -ne 0 ]; do
-  echo "==========================================================================="
-  if [ "$1" = "main" ]; then
-   echo "Check for main configuration file done."
-  elif [ ! -e $MAINDIR/$1 ]; then
-   echo "WARNING: $1 file doesn't exist!"
-  else
-   echo "Checking $1 configuration file..."
-   quale=$1
-   DISABLE_SCRIPT=1
-   read_and_do /bin/true
-   echo "Done."
-  fi
-  shift
- done
+	while [ $# -ne 0 ]
+	do
+		echo "==========================================================================="
+		if [ "$1" = "main" ]; then
+			echo "Check for main configuration file done."
+		elif [ ! -e $MAINDIR/$1 ]; then
+			echo "WARNING: $1 file doesn't exist!"
+		else
+			echo "Checking $1 configuration file..."
+			quale=$1
+			DISABLE_SCRIPT=1
+			read_and_do /bin/true
+			echo "Done."
+		fi
+		shift
+	done
 }
 
 # See prepare_rotate
@@ -608,9 +598,9 @@ copy_tree () {
 }
 
 debecho () {
- if [ ! -z "$DEBUG" ]; then
-  echo "$1" >&2
- fi
+	if [ ! -z "$DEBUG" ]; then
+		echo "$1" >&2
+	fi
 }
 
 # See prepare_rotate
@@ -964,20 +954,20 @@ expand_metavar() {
 
 # See Main
 fill_timevar () {
- debecho "fill_timevar: filling time-related variables"
- local string_date=$(LANG=en date -d "$1" "+%s %m %d %Y %H %M %a %b %A %B"|\
-  tr A-Z a-z)
- set -- $string_date
- stamp_now=$1
- today=$3
- date_now="$2/$3/$4 $5:$6"
- now_hour=$5
- now_min=$6
- name_today=$7
- name_month=$8
- long_name_today=$9
- long_name_month=${10}
- ldom=$(cal |tail -n 2|head -n 1|rev|cut -d' ' -f1|rev)
+	debecho "fill_timevar: filling time-related variables"
+	local string_date=$(LANG=en date -d "$1" \
+	                  "+%s %m %d %Y %H %M %a %b %A %B"| tr A-Z a-z)
+	set -- $string_date
+	stamp_now=$1
+	today=$3
+	date_now="$2/$3/$4 $5:$6"
+	now_hour=$5
+	now_min=$6
+	name_today=$7
+	name_month=$8
+	long_name_today=$9
+	long_name_month=${10}
+	ldom=$(cal |tail -n 2|head -n 1|rev|cut -d' ' -f1|rev)
 }
 
 # See summarize_loginfo
@@ -1082,18 +1072,18 @@ findlog () {
 }
 
 get_control_info () {
- local NameOfCtrlFile="$STATDIR/.${log//\//_}.rtt"
- case "$1" in
-  date|stamp|size|partial)
-   eval "$2=\"$(cat $NameOfCtrlFile 2>/dev/null|grep "^$1:"|\
-    cut -d':' -f2-)\""
-   ;;
-  *)
-   echo "Internal error in get_control_info call"
-   echo "parameters: $@"
-   USCITA=$E_INTERNAL
-   exit $USCITA
- esac
+	local NameOfCtrlFile="$STATDIR/.${log//\//_}.rtt"
+	case "$1" in
+		date|stamp|size|partial)
+			eval "$2=\"$(cat $NameOfCtrlFile 2>/dev/null|grep \
+			"^$1:"| cut -d':' -f2-)\""
+			;;
+		*)
+			echo "Internal error in get_control_info call"
+			echo "parameters: $@"
+			USCITA=$E_INTERNAL
+			exit $USCITA
+	esac
 }
 
 # See mail_to_admin
@@ -1159,29 +1149,28 @@ is_readable() {
 
 # See expand_filenames
 is_taboo() {
- local taboo
- local tt
- local extf
-
- for taboo in $TABOO_EXT; do
-  debecho "Checking if $1 ends with taboo extension $taboo"
-  #if [ $(basename "$1" $taboo) != "$1" ]; then
-  # Speed up:
-  if [ "${1%$taboo}" != "$1" ]; then
-   debecho "File $1 has a taboo extension!"
-   return 1
-  fi
- done
- return 0
+	local taboo
+	local tt
+	local extf
+	for taboo in $TABOO_EXT; do
+		debecho "Checking if $1 ends with taboo extension $taboo"
+		#if [ $(basename "$1" $taboo) != "$1" ]; then
+		# Speed up:
+		if [ "${1%$taboo}" != "$1" ]; then
+			debecho "File $1 has a taboo extension!"
+			return 1
+		fi
+	done
+	return 0
 }
 
 # See expand_filenames
 is_quoted() {
- if [ $(expr index "$1" "\"" ) -eq 0 ]; then
-  f=${1// /}
- else
-  f=${1//\"/}
- fi
+	if [ $(expr index "$1" "\"" ) -eq 0 ]; then
+		f=${1// /}
+	else
+		f=${1//\"/}
+	fi
 }
 
 # See expand_filenames
@@ -1285,15 +1274,10 @@ mail_err() {
  cat <<EOF
 Details of $quale log rotation NOT performed
 
-
 File to $1           : $log
 Name of ${1}d file   : $storefile
 
 $( cat $TMPERRMSG )
-
-If you don't correct this problem before this date rottlog will send
-same error message next time it will try to manage this logfile.    
-
 
 EOF
 }
@@ -1543,23 +1527,23 @@ make_tmpdir () {
 }
 
 make_storefile () {
- if [ ! -z "$param_storefile" ]; then
-  debecho "make_storefile: Before expand_metavar:"
-  debecho "make_storefile: storefile=$storefile"
-  debecho "make_storefile: param_storefile=$param_storefile"
-  expand_metavar "$log" "$param_storefile"
-  storefile="$pcdpc/$expanded_metavars"
-  debecho "make_storefile: After all expand_metavar:"
-  debecho "make_storefile: storefile=$storefile"
- else
-  debecho "make_storefile: No storefile directive used."
-  debecho "make_storefile: Composing storefile: $pcdpc / basename $1"
-  storefile="$pcdpc/$(basename $1)"
-  lastnum "$storefile*" 1
-  numero=$?
-  storefile="$storefile.$numero"
-  debecho "make_storefile: Here storefile=$storefile"
- fi
+	if [ ! -z "$param_storefile" ]; then
+		debecho "make_storefile: Before expand_metavar:"
+		debecho "make_storefile: storefile=$storefile"
+		debecho "make_storefile: param_storefile=$param_storefile"
+		expand_metavar "$log" "$param_storefile"
+		storefile="$pcdpc/$expanded_metavars"
+		debecho "make_storefile: After all expand_metavar:"
+		debecho "make_storefile: storefile=$storefile"
+	else
+		debecho "make_storefile: No storefile directive used."
+		debecho "make_storefile: Composing storefile: $pcdpc / basename $1"
+		storefile="$pcdpc/$(basename $1)"
+		lastnum "$storefile*" 1
+		numero=$?
+		storefile="$storefile.$numero"
+		debecho "make_storefile: Here storefile=$storefile"
+	fi
 }
 
 # See prepare_rotate
@@ -2818,7 +2802,7 @@ read_rcopts() {
    NOCOMPRESS=1
   fi
   if [ -z "$unpacker" ] || [ -z "$uncompress" ]; then
-   echo "WARNING: --showlog feature is disabled"
+   echo "WARNING: -l feature is disabled"
    echo "To use it you must fill correctly:"
    echo "unpacker and decompress variables"
    NO_SHOWLOG=1
@@ -2830,8 +2814,8 @@ read_rcopts() {
   fi
   if [ -z "$pager" ] && [ -z "$PAGER" ]; then
    echo "WARNING: No default pager"
-   echo "This means that --showlog will be used only with --pager option"
-   echo "To avoid this behavoir you must correctly fill pager variable"
+   echo "This means that -l will be used only with the -p option"
+   echo "To avoid this behaviour you must correctly fill pager variable"
   fi
   if [ -z "$touser" ]; then
    echo "Must specify destination address for e-mail messages"
@@ -3068,23 +3052,21 @@ setup_vars () {
  # TODO: add mailopt_* ??
 }
 
-# See Main
 show_defaults () {
- local VARS="VERSION MAINDIR MAINRC STATDIR DELAYED_FILES DATE_OFFSET \
-             BASE_TMP_DIR DEBUG mail pager follow_symlinks dir_own dir_grp \
-             dir_perm fil_own fil_grp fil_perm tabooext"
- local V=
- banner
- echo
- echo "Default values for important variables:"
- echo
- for V in $VARS; do
-  echo -n "$V="
-  eval echo \$$V
- done
- #Alternative :-)
- # But less flexible...
- #set|grep "^def_.*="|cut -b 5-
+	local VARS="VERSION MAINDIR MAINRC STATDIR DELAYED_FILES DATE_OFFSET \
+	            BASE_TMP_DIR DEBUG mail pager follow_symlinks dir_own \
+	            dir_grp dir_perm fil_own fil_grp fil_perm tabooext"
+	local V=
+	banner
+	echo
+	echo "Default values for important variables:"
+	echo
+	for V in $VARS; do
+		echo -n "$V="
+		eval echo \$$V
+	done
+	#Alternative, but less flexible.
+	#set|grep "^def_.*="|cut -b 5-
 }
 
 # See Main
@@ -3143,85 +3125,65 @@ show_log () {
 signature() {
 cat <<EOF
 
----
-
+-- 
 GNU Rot[t]log v.$VERSION
-     http://www.gnu.org/software/rottlog
+    <http://www.gnu.org/software/rottlog>
 EOF
 }
 
 # See Main
 summarize_loginfo () {
- # Cycle between daily, weekly, monthly, and custom
- # quando trovo il file in uno di questi tre visualizzo le info ed esco
- for quale in custom daily weekly monthly; do
-  if [ -e $MAINDIR/$quale ]; then
-   debecho "summarize_loginfo: Searching in $quale conffile"
-   read_and_do findlog "$1"
-  fi
- done
+	# Cycle between daily, weekly, monthly, and custom
+	# quando trovo il file in uno di questi tre visualizzo le info ed esco
+	for quale in custom daily weekly monthly; do
+		if [ -e $MAINDIR/$quale ]; then
+		debecho "summarize_loginfo: Searching in $quale conffile"
+		read_and_do findlog "$1"
+		fi
+	done
 }
 
 # See Main
-syntax () {
- banner
- echo
- echo "Syntax: rottlog <OPTIONS>"
- echo "  --help, -h"
- echo "    Display this page and exit"
- echo "  --version, -V"
- echo "    Display version, disclaimer and exit"
- echo "  --defaults"
- echo "    Display default values and exit"
- echo " --showlog <logfile>, -s <logfile>"
- echo "    Show with a pager (un)compressed archived logs"
- echo " --pager <program>"
- echo "    Use <program> for paging output of showlog"
- echo " --summary <logfile>"
- echo "    Display a summary of some useful information about <logfile>"
- echo " --checkrc <what>,<what>,..."
- echo "    Check for syntax of specified configuration file(s)"
- echo "    <what> must be one of: daily, weekly, monthly, custom, all"
- echo " --force [<what>]"
- echo "    Force rotation/archiving of all entries in <what> config file"
- echo "    and subsequent period-related config files."
- echo "    <what> must be one of: daily, weekly, monthly"
- echo "    Rotation/archiving of all logfiles will be forced if <what>"
- echo "    is not used."
- echo " --forceonly [<what>]"
- echo "    Force rotation/archiving of all entries only in <what> config" 
- echo "    file. See --force option for more information."
- echo " --debug"
- echo "    Let rottlog be verbose."
- echo
+usage () {
+	echo
+	echo "Usage: rottlog [-dlv] [--help] [-p CMD] [-s FILE] [--version]"
+	echo "               [--checkrc all|custom|daily|weekly|monthly]"
+	echo "       rottlog {-f} [custom|daily|weekly|monthly]"
+	echo
+	echo "Report bugs to: <bug-rottlog@gnu.org>"
+	echo "Rot[t]log on the web: <http://www.gnu.org/software/rottlog/>"
+	echo "User questions may be asked on IRC: #sgos on irc.freenode.net"
+	echo "General help using GNU software: <http://www.gnu.org/gethelp/>"
+	echo
 }
 
 update_stamp() {
- local NameOfCtrlFile="$STATDIR/.${log//\//_}.rtt"
- debecho "update_stamp: Updating $NameOfCtrlFile file"
- echo "stamp:$stamp_now"  >$NameOfCtrlFile
- echo "date:$date_now"   >>$NameOfCtrlFile
- echo "size:$size_b"     >>$NameOfCtrlFile
- if [ ! -z "$1" ]; then
-  echo "partial:$1"  >>$NameOfCtrlFile
- fi
- if [ ! -f "$NameOfCtrlFile" ]; then
-  debecho "update_stamp: Can't write control file!"
-  debecho "update_stamp: Disk full or permission denied!"
- fi
+	local NameOfCtrlFile="$STATDIR/.${log//\//_}.rtt"
+	debecho "update_stamp: Updating $NameOfCtrlFile file"
+	echo "stamp:$stamp_now"  >$NameOfCtrlFile
+	echo "date:$date_now"   >>$NameOfCtrlFile
+	echo "size:$size_b"     >>$NameOfCtrlFile
+	if [ ! -z "$1" ]; then
+		echo "partial:$1"  >>$NameOfCtrlFile
+	fi
+	if [ ! -f "$NameOfCtrlFile" ]; then
+		debecho "update_stamp: Can't write control file!"
+		debecho "update_stamp: Disk full or permission denied!"
+	fi
 }
 
 # See read_and_do and mail_to_admin
 update_stats() {
- (
-  local newc=$(eval echo \$${2}_${1})
-  if [ -s $TMP_STATFILE ]; then
-   source $TMP_STATFILE
-   local newc=$[ newc + $(eval echo \$${2}_${1}) ]
-   sed -e "s/^$2_$1=.*/$2_$1=$newc/" $TMP_STATFILE >$NEW_TMP_STATFILE
-   cp -f $NEW_TMP_STATFILE $TMP_STATFILE
-  fi
- )
+	(
+		local newc=$(eval echo \$${2}_${1})
+		if [ -s $TMP_STATFILE ]; then
+			source $TMP_STATFILE
+			local newc=$[ newc + $(eval echo \$${2}_${1}) ]
+			sed -e "s/^$2_$1=.*/$2_$1=$newc/" \
+			        $TMP_STATFILE >$NEW_TMP_STATFILE
+			cp -f $NEW_TMP_STATFILE $TMP_STATFILE
+		fi
+	)
 }
 
 # MAIN
@@ -3231,140 +3193,137 @@ debecho "MAIN: Filling time base variable"
 date_refer=$(date "+%m/%d/%Y %H:%M:%S")
 # Prevent multiple executions of this program at the same time:
 if [ -e $LOCK ]; then
- echo "There is another running rottlog instance."
- echo "Can't run multiple instances of this program."
- USCITA=$E_LOCKED
- exit $USCITA
+	echo "Can't run multiple instances of rottlog."
+	USCITA=$E_LOCKED
+	exit $USCITA
 else
- echo "$$" >$LOCK
- chmod 0400 $LOCK
+	echo "$$" >$LOCK
+	chmod 0400 $LOCK
 fi
-
 if [ $# -eq 1 ]; then
- case "$1" in
-  --help|-h)
-	 syntax
-	 exit 0
-	 ;;
-  --version|-V)
-	 banner 1
-	 exit 0
-	 ;;
-  --debug|-d)
-	 DEBUG=1
-	 ;;
- esac
+	case "$1" in
+		# This should be a separate script.
+		--checkrc)
+			shift
+			if [ -z "$1" ]; then
+				echo "Invalid syntax!"
+			fi
+			while [ $# -ne 0 ]
+			do
+				case "$1" in
+					weekly)
+						rctocheck="$rctocheck weekly"
+						;;
+					monthly)
+						rctocheck="$rctocheck monthly"
+						;;
+					daily)
+						rctocheck="$rctocheck daily"
+						;;
+					custom)
+						rctocheck="$rctocheck custom"
+						;;
+					all)
+						rctocheck="weekly monthly daily custom"
+						;;
+					main)
+						# already checked!
+						rctocheck="$rctocheck main"
+						;;
+					*)
+						echo "Invalid option to checkrc: $1"
+						USCITA=$E_BAD_PARAM; exit $USCITA
+						;;
+				esac
+				shift
+			done
+			checkrc $rctocheck
+			;;
+		--help)
+			usage
+			exit 0
+			;;
+		--version)
+			banner 1
+			exit 0
+			;;
+	esac
 fi
 make_tmpdir
 read_rcopts "$MAINRC"
 fill_timevar "$date_refer"
 if [ $# -ne 0 ]; then
- while [ $# -gt 0 ]; do
-  case "$1" in
-   --defaults)
-	  show_defaults
-	  ;;
-   --showlog|-s)
-	  if [ -z "$NO_SHOWLOG" ]; then
-	   show_log "$2"
-	  fi
-          shift
-          exit 0
-          ;;
-   --summary)
-          summarize_loginfo "$2"
-          shift
-          exit 0
-          ;;
-   --checkrc)
-          shift
-          if [ -z "$1" ]; then
-           echo "Invalid syntax! You must use at least one of:"
-           echo "main, weekly, monthly, daily, custom, all"
-          fi
-          while [ $# -ne 0 ]; do
-           case "$1" in
-            weekly)
-             rctocheck="$rctocheck weekly"
-             ;;
-            monthly)
-             rctocheck="$rctocheck monthly"
-             ;;
-            daily)
-             rctocheck="$rctocheck daily"
-             ;;
-            custom)
-             rctocheck="$rctocheck custom"
-             ;;
-            all)
-             rctocheck="weekly monthly daily custom"
-             ;;
-            main)
-             # already checked!
-             rctocheck="$rctocheck main"
-             ;;
-            *)
-             echo "Invalid option to checkrc: $1"
-             USCITA=$E_BAD_PARAM; exit $USCITA
-             ;;
-           esac
-          shift
-          done
-          checkrc $rctocheck
-          ;;
-   --force|--forceonly)
-          if [ -z "$2" ]; then
-           config_file="day month week custom"
-          else
-           case "$2" in
-            daily)
-             config_file="day"
-             ;;
-            monthly)
-             config_file="month"
-             ;;
-            weekly)
-             config_file="week"
-             ;;
-            custom)
-             config_file="custom"
-             ;;
-           esac
-          fi
-          debecho "MAIN: Deleting time control files $config_file"
-          (
-           for i in $config_file; do
-            debecho "MAIN: Deleting $STATDIR/.last${i}"
-            rm -f "$STATDIR/.last${i}"
-           done
-          )
-          #DONTEXIT=1
-          [ "$1" = "--force" ] && config_file="none"
-          shift
-          ;;
-   --pager)
-          if [ -z "$NO_SHOWLOG" ]; then
-           if [ -z "$2" ]; then
-            echo "Must specify pager!"
-            USCITA=$E_NO_PAGER
-            exit $USCITA
-           fi
-           pager="$2"
-           debecho "MAIN: Pager will be: $pager"
-          fi
-          shift
-          ;;
-   -d|--debug)
-          DEBUG=1
-          ;;
-   *)
-          echo "Invalid parameter or bad context: $1"
-          USCITA=$E_BAD_PARAM; exit $USCITA
-          ;;
-  esac
-  shift
- done
- #[ -z "$DONTEXIT" ] && exit 0
+	while getopts "dlsv" OPTS
+	do
+		case "$OPTS" in
+			d)
+				show_defaults
+				;;
+			l)
+				if [ -z "$NO_SHOWLOG" ]; then
+					show_log "$2"
+				fi
+				shift
+				exit 0
+				;;
+			s)
+				summarize_loginfo "$2"
+				shift
+				exit 0
+				;;
+			f)
+				if [ -z "$2" ]; then
+					config_file="day month week custom"
+				else
+					case "$2" in
+						daily)
+							config_file="day"
+							;;
+						monthly)
+							config_file="month"
+							;;
+						weekly)
+							config_file="week"
+							;;
+						custom)
+							config_file="custom"
+							;;
+					esac
+				fi
+				debecho "MAIN: Deleting time control files $config_file"
+				(
+					for i in $config_file; do
+						debecho "MAIN: Deleting $STATDIR/.last${i}"
+						rm -f "$STATDIR/.last${i}"
+					done
+				)
+				#DONTEXIT=1
+				# This was changed from --force:
+				[ "$1" = "-f" ] && config_file="none"
+				shift
+				;;
+			p)
+				if [ -z "$NO_SHOWLOG" ]; then
+					if [ -z "$2" ]; then
+						echo "Must specify pager!"
+						USCITA=$E_NO_PAGER
+						exit $USCITA
+					fi
+					pager="$2"
+					debecho "MAIN: Pager will be: $pager"
+				fi
+				shift
+				;;
+			v)
+				DEBUG=1
+				;;
+			*)
+				usage
+				;;
+		esac
+		shift
+	done
+	#[ -z "$DONTEXIT" ] && exit 0
 fi
 read_custom
 read_daily

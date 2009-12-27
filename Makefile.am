@@ -17,8 +17,8 @@
 
 bin_SCRIPTS = rottlog virottrc
 
-info_TEXINFOS = ./doc/texinfo/rottlog.texi
-DIST_SUBDIRS = src rc doc doc/texinfo doc/man
+info_TEXINFOS = ./doc/rottlog.texi
+DIST_SUBDIRS = src rc doc
 
 # Problems:
 # - make clean do not remove .info files
@@ -55,18 +55,6 @@ rottlog:
 	  echo "ERROR!!"; \
 	  exit 1; \
 	fi
-	@echo -n "Updating man pages... "
-	@lista='$(man_MANS)'; for M in $$lista; do \
-	  sed -e 's/\@ETCDIR/$(esc_ETCDIR)/' -e \
-		 's/\@STATDIR/$(esc_STATDIR)/' $$M > $$M.new; \
-	  if test ! -s $$M.new ; then \
-	    echo "ERROR"; \
-	    exit 1; \
-	  else \
-	    mv $$M.new $$M; \
-	  fi; \
-	done; \
-	echo "OK"
 	@echo -n "Updating info pages... "
 	@lista='$(info_TEXINFOS)'; for M in $$lista; do \
 	  sed -e 's/\@\@ETCDIR/$(esc_ETCDIR)/' -e \
@@ -83,10 +71,6 @@ rottlog:
 INSTALL_RC = ${INSTALL} -o ${LOG_OWN} -g ${LOG_GROUP} -m ${LOG_RC}
 INSTALL_SCRIPT = ${INSTALL} -o ${LOG_OWN} -g ${LOG_GROUP} -m ${LOG_MODE}
 
-man_MANS = ./doc/man/rottlog.8
-EXTRA_DIST=$(man_MANS)
-
-
 install-data-local:
 	mkdir -m $(ETC_MODE) -p $(ROTT_ETCDIR)
 	mkdir -p $(ROTT_STATDIR)
@@ -100,4 +84,3 @@ install-exec-hook:
 	$(LN_S) -f $(bindir)/virottrc $(bindir)/virottday
 	$(LN_S) -f $(bindir)/virottrc $(bindir)/virottweek
 	$(LN_S) -f $(bindir)/virottrc $(bindir)/virottcustom
-
