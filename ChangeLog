@@ -1,10 +1,7 @@
-2009.12.27 <sinuhe@gnu.org>
+2010.03.03 <sinuhe@gnu.org>
 
-* Simplify --version/--help; make them consistent with GNU coding standards.
-* Change indentation style from single space to tabs with inline spaces
-  (incomplete).
-* Add RPM spec file.
-* Remove man page.
+* Copy config.{sub,guess} instead of make symlink
+* Test for texinfo build
 
 2009.10.01 <sinuhe@gnu.org>
 

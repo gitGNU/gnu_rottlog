@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Autoconf script for rottlog.
 # Copyright 2003 Stefano Falsetto <falsetto@gnu.org>
-# Copyright 2008, 2009 David Egan Evans <sinuhe@gnu.org>
+# Copyright 2008, 2009, 2010 David Egan Evans <sinuhe@gnu.org>
 #
 # This program is free software.  You can redistribute it, or modify it,
 # or both, under the terms of the GNU General Public License version 3
@@ -17,7 +17,7 @@
 #
 
 AC_PREREQ(2.57)
-AC_INIT(rottlog,0.71.2,[David Egan Evans sinuhe@gnu.org])
+AC_INIT(rottlog,0.71.3,[sinuhe@gnu.org])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/rottlog])
 
@@ -99,6 +99,10 @@ AC_PROG_EGREP
 AC_PROG_LN_S
 
 AC_PATH_PROGS(MAKEINFO,		makeinfo)
+if test "x${MAKEINFO}" = "x" 
+then
+  AC_MSG_ERROR([Please install Texinfo.])
+fi
 AC_PATH_PROGS(MV,		mv)
 AC_PATH_PROGS(SED,		sed)
 
