@@ -1,12 +1,18 @@
+2010.03.04 <sinuhe@gnu.org>
+
+* Fix getopts ignore of options.
+* Simplify make_tmpdir messages.
+* Toggle VERSION for 0.72.
+
 2010.03.03 <sinuhe@gnu.org>
 
-* Copy config.{sub,guess} instead of make symlink
-* Test for texinfo build
+* Copy config.{sub,guess} instead of make symlink.
+* Test for texinfo build.
 
 2009.10.01 <sinuhe@gnu.org>
 
 * Remove 0 exit code variable, since this always has the same meaning
-  in the shell..
+  in the shell.
 
 2009.04.11 <sinuhe@gnu.org>
 
