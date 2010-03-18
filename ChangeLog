@@ -1,3 +1,8 @@
+2010.03.18 <sinuhe@gnu.org>
+
+* Update gnulib files to up-to-the-minute snapshot.
+* Update TODO file, plus some readability changes.
+
 2010.03.04 <sinuhe@gnu.org>
 
 * Fix getopts ignore of options.
