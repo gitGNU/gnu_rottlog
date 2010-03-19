@@ -717,27 +717,28 @@ do_rotate() {
 			then
 				if [ ! -z "$notifempty" ]
 				then
-				# considero il file come vuoto
-				debecho "do_rotate: logpart+notifempty sizeb<2*qdldl = do nothing"
-				debecho "do_rotate: updating control file"
-				update_stamp $size_b
-				return 1
-			fi
-			if [ $bytes -ne 0 ]
-			then
-				debecho "do_rotate: tailing bytes from beginning"
-				tail --bytes=+$partqdl $1 >$2
-				size_b=$(ls -l "$1"|tr -s ' '|cut -d' ' -f5)
-				update_stamp $size_b
-			else
-				# lascio righe o una regexp
-				debecho "do_rotate: tailing rows from beginning"
-				tail +$partqdl $1 >$2
-				size_b=$(ls -l "$1"|tr -s ' '|cut -d' ' -f5)
-				update_stamp $size_b
-			fi 
-		fi # end of sanity checks
-	fi # end of if -z TRY_SIZE
+					# considero il file come vuoto
+					debecho "do_rotate: logpart+notifempty sizeb<2*qdldl = do nothing"
+					debecho "do_rotate: updating control file"
+					update_stamp $size_b
+					return 1
+				fi
+				if [ $bytes -ne 0 ]
+				then
+					debecho "do_rotate: tailing bytes from beginning"
+					tail --bytes=+$partqdl $1 >$2
+					size_b=$(ls -l "$1"|tr -s ' '|cut -d' ' -f5)
+					update_stamp $size_b
+				else
+					# lascio righe o una regexp
+					debecho "do_rotate: tailing rows from beginning"
+					tail +$partqdl $1 >$2
+					size_b=$(ls -l "$1"|tr -s ' '|cut -d' ' -f5)
+					update_stamp $size_b
+				fi 
+			fi # end of sanity checks
+		fi # end of if -z TRY_SIZE
+	fi
 	if [ ! -z "$DELAY" ]
 	then
 		IS_OLD=$(grep "$1" $DELAYED_FILES 2>/dev/null)

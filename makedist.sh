@@ -97,7 +97,7 @@ cp -v tmp/virottrc tmp/$MAINPRG-$VERSION/src/virottrc
 cp -v tmp/configure.ac tmp/$MAINPRG-$VERSION/configure.ac
 
 # Get rid of Arch cruft.
-echo "Poof to Arch cruft? (Press Enter to create tarball):"
+echo "Press Enter to create tarball:"
 read i
 if [ "$i" = "" ]; then
 	cd tmp

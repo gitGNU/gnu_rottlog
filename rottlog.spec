@@ -5,9 +5,9 @@
 %define _docdir      /usr/share/doc
 %define packer %(finger -lp `echo "$USER"` | head -n 1 | cut -d: -f 3)
 
-Name: emacs
+Name: rottlog
 Summary: GNU rottlog is the GNU log management utility.
-Version: 0.71.2
+Version: 0.72
 Release: 1
 License: GPLv3+
 Vendor: Free Software Foundation
@@ -16,15 +16,16 @@ URL: http://www.gnu.org/software/rottlog/
 Group: Applications/System
 Source: http://ftp.gnu.org/gnu/rottlog/rottlog-%{version}.tar.gz
 Buildroot: %{_tmppath}/%{name}-root
+BuildArch: noarch
 BuildRequires: autoconf, automake, texinfo
 
 %description
-GNU rottlog is the GNU log management utility.  It is designed
-to simplify administration of systems that generate large numbers of
-log files.  It allows automatic rotation, compression, and archiving of
-logs.  It also mails reports to the system administrator.  Each log file
-may be handled daily, weekly, monthly, in user-defined days, or when it
-becomes too large.
+GNU rottlog is the GNU log management utility.  It is designed to
+simplify administration of systems that generate large numbers
+of log files.  It archives and compresses logs.  It also mails
+reports to the system administrator.  Each log file may be handled
+daily, weekly, monthly, in user-defined days, or when it becomes
+too large.
 
 %prep
 echo Building %{name}-%{version}-%{release}
@@ -58,15 +59,17 @@ fi
 %defattr(-,root,root)
 %doc AUTHORS ChangeLog COPYING* INSTALL NEWS README* TODO
 %{_bindir}/*
-%{_mandir}/*/*
 %{_infodir}/*
 
 %changelog
+* Fri Mar 19 2010 D. E. Evans <sinuhe@gnu.org>
+- Release 0.72.
+
 * Mon Dec 27 2009 D. E. Evans <sinuhe@gnu.org>
 - Initial release.
 
 #This file is an addition to GNU Emacs.
-# Copyright 2009 D. E. Evans <sinuhe@gnu.org>
+# Copyright 2009, 2010 D. E. Evans <sinuhe@gnu.org>
 #
 #The GNU Emacs spec file is free software: you can redistribute
 #it and/or modify it under the terms of the GNU General Public

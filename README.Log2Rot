@@ -43,8 +43,8 @@ There is a number of variables that can be modified by the user:
   This is the basedir that will contain temporary files.
 
 
-Copyright @ 2003, 2004 Stefano Falsetto <falsetto@gnu.org>
-Copyright @ 2008 D E Evans <sinuhe@gnu.org>
+@ 2003, 2004 Stefano Falsetto <falsetto@gnu.org>
+@ 2008 D E Evans <sinuhe@gnu.org>
   
 Permission is granted to copy, distribute, or modify this document
 (or both) under the terms of the GNU Free Documentation License,

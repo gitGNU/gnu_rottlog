@@ -1,6 +1,6 @@
 # Rottlog Makefile
 # Copyright 2003, 2004 Stefano Falsetto <falsetto@gnu.org>
-# Copyright 2008 David Egan Evans <sinuhe@gnu.org>
+# Copyright 2008, 2010 David Egan Evans <sinuhe@gnu.org>
 #
 # This program is free software.  You can redistribute it, or modify it,
 # or both, under the terms of the GNU General Public License version 3
@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses>.
 #
 
-bin_SCRIPTS = rottlog virottrc
+bin_SCRIPTS = rottlog
 
 info_TEXINFOS = ./doc/rottlog.texi
 DIST_SUBDIRS = src rc doc
@@ -79,8 +79,8 @@ install-data-local:
 
 install-exec-hook:
 	$(INSTALL_SCRIPT) $(srcdir)/src/rottlog $(bindir)/rottlog
-	$(INSTALL_SCRIPT) $(srcdir)/src/virottrc $(bindir)/virottrc
-	$(LN_S) -f $(bindir)/virottrc $(bindir)/virottmonth
-	$(LN_S) -f $(bindir)/virottrc $(bindir)/virottday
-	$(LN_S) -f $(bindir)/virottrc $(bindir)/virottweek
-	$(LN_S) -f $(bindir)/virottrc $(bindir)/virottcustom
+#	$(INSTALL_SCRIPT) $(srcdir)/src/virottrc $(bindir)/virottrc
+#	$(LN_S) -f $(bindir)/virottrc $(bindir)/virottmonth
+#	$(LN_S) -f $(bindir)/virottrc $(bindir)/virottday
+#	$(LN_S) -f $(bindir)/virottrc $(bindir)/virottweek
+#	$(LN_S) -f $(bindir)/virottrc $(bindir)/virottcustom
