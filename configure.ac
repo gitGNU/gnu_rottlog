@@ -17,7 +17,7 @@
 #
 
 AC_PREREQ(2.57)
-AC_INIT(rottlog,0.71.3,[sinuhe@gnu.org])
+AC_INIT(rottlog,0.72.1,[sinuhe@gnu.org])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/rottlog])
 

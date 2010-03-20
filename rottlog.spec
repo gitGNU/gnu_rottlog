@@ -1,14 +1,14 @@
 # RPM spec file for GNU Rot[t]log
 # See the end of the file for license conditions.
 
-%define _sbindir      /usr/sbin
+%define _bindir      /usr/sbin
 %define _docdir      /usr/share/doc
 %define packer %(finger -lp `echo "$USER"` | head -n 1 | cut -d: -f 3)
 
 Name: rottlog
 Summary: GNU rottlog is the GNU log management utility.
-Version: 0.72
-Release: 2
+Version: 0.72.1
+Release: 1
 License: GPLv3+
 Vendor: Free Software Foundation
 Packager: %packer
@@ -58,10 +58,14 @@ fi
 %files
 %defattr(-,root,root)
 %doc AUTHORS ChangeLog COPYING* INSTALL NEWS README* TODO
-%{_sbindir}/*
+%{_bindir}/*
 %{_infodir}/*
 
 %changelog
+* Fri Mar 19 2010 D. E. Evans <sinuhe@gnu.org>
+- Install to sbin, not bin.
+- Toggle release for 0.72.1.
+
 * Fri Mar 19 2010 D. E. Evans <sinuhe@gnu.org>
 - Release 0.72.
 

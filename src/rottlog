@@ -1708,294 +1708,328 @@ make_storefile () {
 
 # See prepare_rotate
 parse_period () {
- local exit_t=
- local OLDIFS="$IFS"
- local list_elem_lday="monday tuesday wednesday thursday friday \
-                       saturday sunday"
- local list_elem_lmonth="january february march april may june july august \
-                         september october november december"
- local list_elem_sday="mon tue wed thu fri sat sun"
- local list_elem_smonth="jan feb mar apr may jun jul aug sep oct nov dec"
+	local exit_t=
+	local OLDIFS="$IFS"
+	local list_elem_lday="monday tuesday wednesday thursday friday \
+	                      saturday sunday"
+	local list_elem_lmonth="january february march april may june july \
+	                        august september october november december"
+	local list_elem_sday="mon tue wed thu fri sat sun"
+	local list_elem_smonth="jan feb mar apr may jun jul aug sep oct nov dec"
 
- local crit=
- local pieces="$1"
+	local crit=
+	local pieces="$1"
 
- while [ 0 ]
- do
-  local IFS=","
-  local num_cond=1
-  for opt in $pieces
-  do
-   num_cond=$[ num_cond + 1 ]
-   [ -z "$opt" -o "$opt" = "," ] && continue 
-   local ltoken=0
-   local token=
-   local rest=
-   local first=
-   local NOT=
-   opt=$(echo $opt|tr -s ' ')
-   [ "${opt:0:1}" = " " ] && opt=${opt:1}
-   IFS="$OLDIFS"
-   for token in $opt
-   do
-    debecho "parse_period: Here token=$token"
-    ltoken=$[ ltoken + ${#token} + 1 ] # +1 per lo spazio tra i tokens
-    rest=${opt:ltoken}
-    if [ "${token:0:1}" = '!' ]; then
-     debecho "parse_period: Operator NOT"
-     NOT='!'
-     token=${token:1}
-     #rest=${opt:ltoken+1}
-    fi
-    case "$token" in
-     *+*)
-      debecho "parse_period: Expanding inline OR operator"
-      lastchar=$[ ${#token} - 1 ]
-      if [ "${token:$[ ${#token} - 1 ]:1}" = '+' ]; then
-       echo "Error in OR definition"
-       exit $E_BAD_OR
-      fi
-      op=$(echo "$token"|cut -d'+' -f1)
-      if [ -z "$op" ]; then
-       echo "Error in OR definition"
-       USCITA=$E_BAD_OR
-       exit $USCITA
-      fi
-      case "$op" in
-       monday|tuesday|wednesday|thursday|friday|\
-       saturday|sunday)
-        local list_elem=$list_elem_lday
-        ;;
-       january|february|march|april|may|june|july|\
-       august|september|october|november|december)
-        local list_elem=$list_elem_lmonth
-        ;;
-       mon|tue|wed|thu|fri|sat|sun)
-        local list_elem=$list_elem_sday
-        ;;
-       jan|feb|mar|apr|may|jun|jul|aug|sep|oct|\
-       nov|dec)
-        local list_elem=$list_elem_smonth
-        ;;
-       *)
-        echo "Error in inline OR definition!"
-        USCITA=$E_BAD_OR
-        exit $USCITA
-        ;;
-      esac
-      allop=${token//+/ }
-      for lop in $allop
-      do
-       checkitem "$list_elem" "$lop"
-       if [ -z "$NOT" ]; then
-        exit_t="$exit_t, $first $lop $rest"
-       else
-        exit_t="$exit_t $NOT$lop"
-       fi
-      done
-      [ ! -z "$NOT" ] && exit_t="$first $exit_t $rest"
-      ;; # end case on *+*
-     *-*) 
-      debecho "parse_period: Expanding range: $token"
-      local checkminus=$(echo "$token"|cut -d'-' -f3-)
-      if [ ! -z "$checkminus" ]; then
-       echo "Error in range definition!"
-       USCITA=$E_BAD_RANGE
-       exit $USCITA
-      fi
-      case $token in
-       *monday*|*tuesday*|*wednesday*|*thursday*|*friday*|\
-       *saturday*|*sunday*)
-        local default_begin="monday"
-        local default_end="sunday"
-        local list_elem=$list_elem_lday
-        ;;
-       *january*|*february*|*march*|*april*|*may*|*june*|*july*|\
-       *august*|*september*|*october*|*november*|*december*)
-        local default_begin="january"
-        local default_end="december"
-        local list_elem=$list_elem_lmonth
-        ;;
-       *mon*|*tue*|*wed*|*thu*|*fri*|*sat*|*sun*)
-        local default_begin="mon"
-        local default_end="sun"
-        local list_elem=$list_elem_sday
-        ;;
-       *jan*|*feb*|*mar*|*apr*|*may*|*jun*|*jul*|*aug*|*sep*|*oct*|\
-       *nov*|*dec*)
-        local default_begin="jan"
-        local default_end="dec"
-        local list_elem=$list_elem_smonth
-        ;;
-       *)
-        echo "Error in range definition!"
-        USCITA=$E_BAD_RANGE
-        exit $USCITA
-       ;;
-      esac
-      begin_t=$(echo "$token"|cut -d'-' -f1)
-      end_t=$(echo "$token"|cut -d'-' -f2)
-      # If it is a range, begin before -xxx)
-      if [ -z "$begin_t" ]; then
-       local begin_t="$default_begin"
-      fi
-      # If it is a range, end after xxx-
-      if [ -z "$end_t" ]; then
-       local end_t="$default_end"
-      else
-       case "$end_t" in
-        monday|tuesday|wednesday|thursday|friday|saturday|sunday)
-         checkitem "$list_elem_lday" "$begin_t"
-         ;;
-        january|february|march|april|may|june|july|august|\
-        september|october|november|december)
-         checkitem "$list_elem_lmonth" "$begin_t"
-         ;;
-        mon|tue|wed|thu|fri|sat|sun)
-         checkitem "$list_elem_sday" "$begin_t"
-         ;;
-        jan|feb|mar|apr|may|jun|jul|aug|sep|oct|\
-        nov|dec)
-         checkitem "$list_elem_smonth" "$begin_t"
-         ;;
-        *)
-         echo "Error on end range!"
-         USCITA=$E_BAD_RANGE
-         exit $USCITA
-         ;;
-       esac
-      fi
-      # Expanding range xxx-yyy
-      local append=
-      local exit_t=
-      for i in $list_elem
-      do
-       [ $i = "$begin_t" ] && append=1
-       if [ ! -z "$append" ]; then
-        if [ -z "$NOT" ]; then
-         exit_t="$exit_t, $first $i $rest"
-        else
-         exit_t="$exit_t $NOT$i"
-        fi
-       fi
-       [ $i = "$end_t" ] && append=
-      done
-      [ ! -z "$NOT" ] && exit_t="$first $exit_t $rest"
-      ;; # End case on *-*
-    esac
-    if [ ! -z "$exit_t" ]; then
-     debecho "parse_period: using num_cond=$num_cond in pieces=$pieces"
-     local addpieces=$(echo "$pieces"|cut -d',' -f$num_cond-)
-     if [ -z "$addpieces" ] || [ "$pieces" = "$addpieces" ]; then
-      pieces="$exit_t"
-     else
-      pieces="$exit_t,$addpieces"
-     fi
-     dont_exit=1
-     num_cond=1
-     break 2
-    fi
-    if [ $(expr "$opt" : ".*-.*") -gt $ltoken ] || \
-       [ $(expr "$opt" : ".*+.*") -gt $ltoken ]; then
-     debecho "parse_period: Non yet filling criteria. Waiting for following iteration"
-    else
-     debecho "parse_period: checking token=$token"
-     case $token in
-      # Add HHh and MMm ???
-      0)
-       debecho "parse_period: --> Always"
-       crit="$crit && [ 1 ]"
-       ;;
-      [[:digit:]][[:digit:]]:[[:digit:]][[:digit:]])
-       debecho "parse_period: --> HH:MM"
-       local ch="$(echo $token|cut -d':' -f1)"
-       local cm="$(echo $token|cut -d':' -f2)"
-       if [ $ch -gt 23 ] || [ $cm -gt 59 ]; then
-        echo "Bad time definition!"
-        USCITA=$E_BAD_TIME
-        exit $USCITA
-       fi
-       #Use timestamp??
-       crit="$crit && [ \"$ch:$cm\" $NOT= \"$now_hour:$now_min\" ]"
-       ;;
-      mon|tue|wed|thu|fri|sat|sun)
-       debecho "parse_period: --> abbreviated weekday"
-       local wday="$token"
-       crit="$crit && [ $wday $NOT= $name_today ]"
-       ;;
-      monday|tuesday|wednesday|thursday|friday|saturday|sunday)
-       debecho "parse_period: --> long weekday"
-       local wday="$token"
-       crit="$crit && [ $wday $NOT= $long_name_today ]"
-       ;;
-      jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
-       debecho "parse_period: --> abbreviated monthname"
-       local wmonth="$token"
-       crit="$crit && [ $wmonth $NOT= $name_month ]"
-       ;;
-      january|ferbruary|march|april|may|june|july|august|september|\
-      october|november|december)
-       debecho "parse_period: --> long monthname"
-       local wmonth="$token"
-       crit="$crit && [ $wmonth $NOT= $long_name_month ]"
-       ;;
-      [[:digit:]]d|[[:digit:]][[:digit:]]d)
-       debecho "parse_period: --> days period"
-       check_mwd "d"
-       ;;
-      [[:digit:]]w|[[:digit:]][[:digit:]]w)
-       debecho "parse_period: --> weeks period"
-       check_mwd "w"
-       ;;
-      [[:digit:]]M|[[:digit:]][[:digit:]]M)
-       debecho "parse_period: --> month period"
-       check_mwd "M"
-       ;;
-      [[:digit:]]|[[:digit:]][[:digit:]])
-       debecho "parse_period: --> Exact day"
-       if [ $token -gt 31 ]; then
-        echo "There is no month long $token days!"
-        USCITA=$E_BAD_DAY
-        exit $USCITA
-       fi
-       if [ $token -gt $ldom ]; then
-        debecho "parse_period: Adjusting to last day of month"
-        token=$ldom
-       fi
-       if [ -z "$NOT" ]; then
-        crit="$crit && [ $today -eq $token ]"
-       else
-        crit="$crit && [ $today -ne $token ]"
-       fi
-       ;;
-      *)
-       echo "Error in period definition. Token: $token"
-       USCITA=$E_BAD_PERIOD
-       exit $USCITA
-       ;;
-     esac
-    fi
-    if [ -z "$first" ]; then
-     first="$NOT$token"
-    else
-     first="$first $NOT$token"
-    fi
-    NOT=
-   done
-   crit=${crit:4}
-   debecho "parse_period: evaluating:"
-   debecho "parse_period: $crit"
-   eval "if $crit; then update_stamp; return 1; else crit=; fi"
-  done
-  if [ -z $dont_exit ]; then
-   break
-  else
-   dont_exit=
-   exit_t=
-  fi
-  IFS="$OLDIFS"
- done
- return 0
+	while [ 0 ]
+	do
+		local IFS=","
+		local num_cond=1
+
+		for opt in $pieces
+		do
+			num_cond=$[ num_cond + 1 ]
+			[ -z "$opt" -o "$opt" = "," ] && continue 
+			local ltoken=0
+			local token=
+			local rest=
+			local first=
+			local NOT=
+			opt=$(echo $opt|tr -s ' ')
+			[ "${opt:0:1}" = " " ] && opt=${opt:1}
+			IFS="$OLDIFS"
+
+			for token in $opt
+			do
+				debecho "parse_period: Here token=$token"
+				ltoken=$[ ltoken + ${#token} + 1 ] # +1 per lo spazio tra i tokens
+				rest=${opt:ltoken}
+				if [ "${token:0:1}" = '!' ]
+				then
+					debecho "parse_period: Operator NOT"
+					NOT='!'
+					token=${token:1}
+					#rest=${opt:ltoken+1}
+				fi
+				case "$token" in
+				*+*)
+					debecho "parse_period: Expanding inline OR operator"
+					lastchar=$[ ${#token} - 1 ]
+					if [ "${token:$[ ${#token} - 1 ]:1}" = '+' ]
+					then
+						echo "Error in OR definition"
+						exit $E_BAD_OR
+					fi
+					op=$(echo "$token"|cut -d'+' -f1)
+					if [ -z "$op" ]
+					then
+						echo "Error in OR definition"
+						USCITA=$E_BAD_OR
+						exit $USCITA
+					fi
+					case "$op" in
+					monday|tuesday|wednesday|\
+					thursday|friday|saturday|sunday)
+						local list_elem=$list_elem_lday
+						;;
+					january|february|march|april|may|june\
+					|july|august|september|october|\
+					november|december)
+						local list_elem=$list_elem_lmonth
+						;;
+					mon|tue|wed|thu|fri|sat|sun)
+						local list_elem=$list_elem_sday
+						;;
+					jan|feb|mar|apr|may|jun|jul|\
+					aug|sep|oct|nov|dec)
+						local list_elem=$list_elem_smonth
+						;;
+					*)
+						echo "Error in inline OR definition!"
+						USCITA=$E_BAD_OR
+						exit $USCITA
+						;;
+					esac
+					allop=${token//+/ }
+					for lop in $allop
+					do
+						checkitem "$list_elem" "$lop"
+						if [ -z "$NOT" ]
+						then
+							exit_t="$exit_t, $first $lop $rest"
+						else
+							exit_t="$exit_t $NOT$lop"
+						fi
+					done
+					[ ! -z "$NOT" ]\
+					&& exit_t="$first $exit_t $rest"
+					;; # end case on *+*
+				*-*)
+					debecho "parse_period: Expanding range: $token"
+					local checkminus=$(echo "$token"|cut -d'-' -f3-)
+					if [ ! -z "$checkminus" ]
+					then
+						echo "Error in range definition!"
+						USCITA=$E_BAD_RANGE
+						exit $USCITA
+					fi
+					case $token in
+					*monday*|*tuesday*|*wednesday*|\
+					*thursday*|*friday*|*saturday*|*sunday*)
+						local default_begin="monday"
+						local default_end="sunday"
+						local list_elem=$list_elem_lday
+						;;
+					*january*|*february*|*march*|*april*|\
+					*may*|*june*|*july*|*august*|\
+					*september*|*october*|*november*|\
+					*december*)
+						local default_begin="january"
+						local default_end="december"
+						local list_elem=$list_elem_lmonth
+						;;
+					*mon*|*tue*|*wed*|*thu*|*fri*|\
+					*sat*|*sun*)
+						local default_begin="mon"
+						local default_end="sun"
+						local list_elem=$list_elem_sday
+						;;
+					*jan*|*feb*|*mar*|*apr*|*may*|*jun*|\
+					*jul*|*aug*|*sep*|*oct*|*nov*|*dec*)
+						local default_begin="jan"
+						local default_end="dec"
+						local list_elem=$list_elem_smonth
+						;;
+					*)
+						echo "Error in range definition!"
+						USCITA=$E_BAD_RANGE
+						exit $USCITA
+						;;
+					esac
+					begin_t=$(echo "$token"|cut -d'-' -f1)
+					end_t=$(echo "$token"|cut -d'-' -f2)
+					# If it is a range, begin before -xxx)
+					if [ -z "$begin_t" ]
+					then
+						local begin_t="$default_begin"
+					fi
+					# If it is a range, end after xxx-
+					if [ -z "$end_t" ]
+					then
+						local end_t="$default_end"
+					else
+						case "$end_t" in
+						monday|tuesday|wednesday|\
+						thursday|friday|saturday|sunday)
+							checkitem "$list_elem_lday" "$begin_t"
+							;;
+						january|february|march|april|\
+						may|june|july|august|september|\
+						october|november|december)
+							checkitem "$list_elem_lmonth" "$begin_t"
+							;;
+						mon|tue|wed|thu|fri|sat|sun)
+							checkitem "$list_elem_sday" "$begin_t"
+							;;
+						jan|feb|mar|apr|may|jun|jul|\
+						aug|sep|oct|nov|dec)
+							checkitem "$list_elem_smonth" "$begin_t"
+							;;
+						*)
+							echo "Error on end range!"
+							USCITA=$E_BAD_RANGE
+							exit $USCITA
+							;;
+						esac
+					fi
+					# Expanding range xxx-yyy
+					local append=
+					local exit_t=
+					for i in $list_elem
+					do
+						[ $i = "$begin_t" ] && append=1
+						if [ ! -z "$append" ]
+						then
+							if [ -z "$NOT" ]
+							then
+								exit_t="$exit_t, $first $i $rest"
+							else
+								exit_t="$exit_t $NOT$i"
+							fi
+						fi
+						[ $i = "$end_t" ] && append=
+					done
+					[ ! -z "$NOT" ] && exit_t="$first $exit_t $rest"
+					;; # End case on *-*
+				esac
+				if [ ! -z "$exit_t" ]
+				then
+					debecho "parse_period: using num_cond=$num_cond in pieces=$pieces"
+					local addpieces=$(echo "$pieces"|cut -d',' -f$num_cond-)
+					if [ -z "$addpieces" ] || \
+					[ "$pieces" = "$addpieces" ]
+					then
+						pieces="$exit_t"
+					else
+						pieces="$exit_t,$addpieces"
+					fi
+					dont_exit=1
+					num_cond=1
+					break 2
+				fi
+				if [ $(expr "$opt" : ".*-.*") -gt $ltoken ] || \
+				[ $(expr "$opt" : ".*+.*") -gt $ltoken ]
+				then
+					debecho "parse_period: Non yet filling criteria. Waiting for following iteration."
+				else
+					debecho "parse_period: checking token=$token"
+					case $token in
+					# Add HHh and MMm ???
+					0)
+						debecho "parse_period: --> Always"
+						crit="$crit && [ 1 ]"
+						;;
+					[[:digit:]][[:digit:]]:[[:digit:]][[:digit:]])
+						debecho "parse_period: --> HH:MM"
+						local ch="$(echo $token|cut -d':' -f1)"
+						local cm="$(echo $token|cut -d':' -f2)"
+						if [ $ch -gt 23 ] || [ $cm -gt 59 ]
+						then
+							echo "Bad time definition!"
+							USCITA=$E_BAD_TIME
+							exit $USCITA
+						fi
+						#Use timestamp??
+						crit="$crit && [ \"$ch:$cm\" $NOT= \"$now_hour:$now_min\" ]"
+						;;
+					mon|tue|wed|thu|fri|sat|sun)
+						debecho "parse_period: --> abbreviated weekday"
+						local wday="$token"
+						crit="$crit && [ $wday $NOT= $name_today ]"
+						;;
+					monday|tuesday|wednesday|thursday|\
+					friday|saturday|sunday)
+						debecho "parse_period: --> long weekday"
+						local wday="$token"
+						crit="$crit && [ $wday $NOT= $long_name_today ]"
+						;;
+					jan|feb|mar|apr|may|jun|jul|aug|\
+					sep|oct|nov|dec)
+						debecho "parse_period: --> abbreviated monthname"
+						local wmonth="$token"
+						crit="$crit && \
+						[ $wmonth $NOT= $name_month ]"
+						;;
+					january|ferbruary|march|april|may|\
+					june|july|august|september|october|\
+					november|december)
+						debecho "parse_period: --> long monthname"
+						local wmonth="$token"
+						crit="$crit && [ $wmonth $NOT= $long_name_month ]"
+						;;
+					[[:digit:]]d|[[:digit:]][[:digit:]]d)
+						debecho "parse_period: --> days period"
+						check_mwd "d"
+						;;
+					[[:digit:]]w|[[:digit:]][[:digit:]]w)
+						debecho "parse_period: --> weeks period"
+						check_mwd "w"
+						;;
+					[[:digit:]]M|[[:digit:]][[:digit:]]M)
+						debecho "parse_period: --> month period"
+						check_mwd "M"
+						;;
+					[[:digit:]]|[[:digit:]][[:digit:]])
+						debecho "parse_period: --> Exact day"
+						if [ $token -gt 31 ]
+						then
+							echo "There is no month long $token days!"
+							USCITA=$E_BAD_DAY
+							exit $USCITA
+						fi
+						if [ $token -gt $ldom ]
+						then
+							debecho "parse_period: Adjusting to last day of month"
+							token=$ldom
+						fi
+						if [ -z "$NOT" ]
+						then
+							crit="$crit && \
+							[ $today -eq $token ]"
+						else
+							crit="$crit && \
+							[ $today -ne $token ]"
+						fi
+						;;
+					*)
+						echo "Error in period definition. Token: $token"
+						USCITA=$E_BAD_PERIOD
+						exit $USCITA
+						;;
+					esac
+				fi
+				if [ -z "$first" ]
+				then
+					first="$NOT$token"
+				else
+					first="$first $NOT$token"
+				fi
+				NOT=
+			done
+			crit=${crit:4}
+			debecho "parse_period: evaluating:"
+			debecho "parse_period: $crit"
+			eval "if $crit; then update_stamp; return 1; else crit=; fi"
+		done
+		if [ -z $dont_exit ]
+		then
+			break
+		else
+			dont_exit=
+			exit_t=
+		fi
+		IFS="$OLDIFS"
+	done
+	return 0
 }
 
 # See read_and_do
@@ -2945,100 +2979,117 @@ read_monthly() {
 
 # See read_and_do and Main
 read_rcopts() {
- local tmp_param
- local RC_VARS="packer compress unpacker uncompress extension pager packdir fromuser touser notifempty mail nomail maxdepth follow_symlink nomissingok missingok nocompress ifempty notifempty nocreate createdir dir_perm dir_own dir_grp fil_own fil_grp fil_perm remove_missing default_storefile SunMon mailstats create_logrotate log_rotate nostoredir sharescripts nosharedscripts tabooext maxage"
- local i=
+	local tmp_param
+	local RC_VARS="packer compress unpacker uncompress extension pager packdir fromuser touser notifempty mail nomail maxdepth follow_symlink nomissingok missingok nocompress ifempty notifempty nocreate createdir dir_perm dir_own dir_grp fil_own fil_grp fil_perm remove_missing default_storefile SunMon mailstats create_logrotate log_rotate nostoredir sharescripts nosharedscripts tabooext maxage"
+	local i=
 
- if [ -z "$1" ]; then
-  echo "Internal error in read_rcopts!!"
-  USCITA=$E_INTERNAL
-  exit $USCITA
- fi
+	if [ -z "$1" ]
+	then
+		echo "Internal error in read_rcopts!!"
+		USCITA=$E_INTERNAL
+		exit $USCITA
+	fi
 
- debecho "read_rcopts: Reading $1 configuration file"
- if [ ! -f $1 ]; then
-  echo "Couldn't read main rc file!"
-  USCITA=$E_NO_RCFILE
-  exit $USCITA
- fi
+	debecho "read_rcopts: Reading $1 configuration file"
+	if [ ! -f $1 ]
+	then
+		echo "Couldn't read main rc file!"
+		USCITA=$E_NO_RCFILE
+		exit $USCITA
+	fi
 
- for i in $RC_VARS
- do
-  tmp_param=$(awk "/^[[:space:]]*$i/ { print }" < $1)
-  #tmp_param=$(awk "/^[[:space:]]*$i\>/ { print }" < $1)
-  if [ -z "$tmp_param" ]; then
-   continue
-  fi
-  if [ $(expr "$tmp_param" : ".*=.*") -eq 0 ]; then
-   debecho "read_rcopts: tmp_param=$tmp_param (=1)"
-   eval $tmp_param=1
-  else
-   debecho "read_rcopts: tmp_param=$tmp_param"
-   # Check for spaced atipical option (i.e. tabooext)
-   if [ "${tmp_param//\"/}" = "$tmp_param" ] && \
-    [ "${tmp_param// /}" != "$tmp_param" ]; then
-    tmp_param=${tmp_param/=/=\"}
-    tmp_param="$tmp_param\""
-   fi
-   eval $tmp_param
-  fi
- done
+	for i in $RC_VARS
+	do
+		tmp_param=$(awk "/^[[:space:]]*$i/ { print }" < $1)
+		#tmp_param=$(awk "/^[[:space:]]*$i\>/ { print }" < $1)
+		if [ -z "$tmp_param" ]
+		then
+			continue
+		fi
+		if [ $(expr "$tmp_param" : ".*=.*") -eq 0 ]
+		then
+			debecho "read_rcopts: tmp_param=$tmp_param (=1)"
+			eval $tmp_param=1
+		else
+			debecho "read_rcopts: tmp_param=$tmp_param"
+			# Check for spaced atipical option (i.e. tabooext)
+			if [ "${tmp_param//\"/}" = "$tmp_param" ] && \
+			[ "${tmp_param// /}" != "$tmp_param" ]
+			then
+				tmp_param=${tmp_param/=/=\"}
+				tmp_param="$tmp_param\""
+			fi
+			eval $tmp_param
+		fi
+	done
 
- # Sanity checks
- if [ -z "$2" ]; then
-  if [ -z "$packer" ] || [ -z "$compress" ]; then
-   echo "WARNING: defaults to nocompress"
-   echo "To compress a logfile you must fill correctly"
-   echo "packer and compress options!"
-   NOCOMPRESS=1
-  fi
-  if [ -z "$unpacker" ] || [ -z "$uncompress" ]; then
-   echo "WARNING: -l feature is disabled"
-   echo "To use it you must fill correctly:"
-   echo "unpacker and decompress variables"
-   NO_SHOWLOG=1
-  fi
-  if [ -z "$extension" ]; then
-   echo "WARNING: Can't use @COMP_EXT metavariable"
-   echo "To use it, the extension option must have a value."
-   NO_EXTENSION=1
-  fi
-  if [ -z "$pager" ] && [ -z "$PAGER" ]; then
-   echo "WARNING: No default pager"
-   echo "This means that -l will be used only with the -p option"
-   echo "To avoid this behaviour you must correctly fill pager variable"
-  fi
-  if [ -z "$touser" ]; then
-   echo "Must specify destination address for e-mail messages"
-   USCITA=$E_NO_TOUSER
-   exit $USCITA
-  fi
-  if [ -z "$mail" ]; then
-   echo "Must specify mailer program with parameters in mail variable"
-   USCITA=$E_NO_MAIL
-   exit $USCITA
-  fi
-  if [ ! -z "$tabooext" ]; then
-   TABOO_EXT="$DEF_TABOO_EXT"
-   tt=$(echo $tabooext)
-   if [ ${tt:0:1} = "+" ]; then
-    debecho "read_rcopts: Adding new patterns to TABOO_EXT"
-    TABOO_EXT="$TABOO_EXT $(echo ${tt:1})"
-   else
-    debecho "read_rcopts: Substituting default pattern with user defined"
-    TABOO_EXT=$(echo $tt)
-   fi
-   tabooext="$TABOO_EXT"
-  fi
- setup_vars "set"
- else
-  > $TMP_PERIOD_RC
-  for i in $RC_VARS; do
-   if [ ! -z "$(eval echo \$$i)" ]; then
-    echo "$i=\"$(eval echo \$$i)\"" >>$TMP_PERIOD_RC
-   fi
-  done
- fi
+	# Sanity checks
+	if [ -z "$2" ]
+	then
+		if [ -z "$packer" ] || [ -z "$compress" ]
+		then
+			echo "WARNING: defaults to nocompress"
+			echo "To compress a logfile you must fill correctly"
+			echo "packer and compress options!"
+			NOCOMPRESS=1
+		fi
+		if [ -z "$unpacker" ] || [ -z "$uncompress" ]
+		then
+			echo "WARNING: -l feature is disabled"
+			echo "To use it you must fill correctly:"
+			echo "unpacker and decompress variables"
+			NO_SHOWLOG=1
+		fi
+		if [ -z "$extension" ]
+		then
+			echo "WARNING: Can't use @COMP_EXT metavariable"
+			echo "To use it, the extension option must have a value."
+			NO_EXTENSION=1
+		fi
+		if [ -z "$pager" ] && [ -z "$PAGER" ]
+		then
+			echo "WARNING: No default pager"
+			echo "This means that -l will be used only with"
+			echo "the -p option. To avoid this behaviour,"
+			echo "correctly fill the pager variable."
+		fi
+		if [ -z "$touser" ]
+		then
+			echo "Must specify destination address for e-mail messages"
+			USCITA=$E_NO_TOUSER
+			exit $USCITA
+		fi
+		if [ -z "$mail" ]
+		then
+			echo "Must specify mailer program with parameters in mail variable"
+			USCITA=$E_NO_MAIL
+			exit $USCITA
+		fi
+		if [ ! -z "$tabooext" ]
+		then
+			TABOO_EXT="$DEF_TABOO_EXT"
+			tt=$(echo $tabooext)
+			if [ ${tt:0:1} = "+" ]
+			then
+				debecho "read_rcopts: Adding new patterns to TABOO_EXT"
+				TABOO_EXT="$TABOO_EXT $(echo ${tt:1})"
+			else
+				debecho "read_rcopts: Substituting default pattern with user defined"
+				TABOO_EXT=$(echo $tt)
+			fi
+			tabooext="$TABOO_EXT"
+		fi
+		setup_vars "set"
+	else
+		> $TMP_PERIOD_RC
+		for i in $RC_VARS
+		do
+			if [ ! -z "$(eval echo \$$i)" ]
+			then
+				echo "$i=\"$(eval echo \$$i)\"" >>$TMP_PERIOD_RC
+			fi
+		done
+	fi
 }
 
 # See Main
@@ -3278,54 +3329,65 @@ show_defaults () {
 
 # See Main
 show_log () {
- debecho "show_log: input pager: pager=$pager -- PAGER=$PAGER"
- if [ ! -z "$pager" ]; then
-  PAGER="$pager"
- fi
- if [ -z "$PAGER" ]; then
-  PAGER=$(which less)
-  if [ -z "$PAGER" ]; then
-   PAGER=$(which more)
-  fi
-  if [ -z "$PAGER" ]; then
-   echo "Can't find a pager! Use pager variable in main rc file or "
-   echo "PAGER environnement variable"
-   USCITA=$E_NO_PAGER
-   exit $USCITA
-  fi
-  if [ ! -x "$PAGER" ]; then
-   echo "Can't exec pager $PAGER!"
-   USCITA=$E_NO_PAGER
-   exit $USCITA
-  fi
- fi
- debecho "show_log: Using pager $PAGER"
- if [ -z "$unpacker" ] || [ -z "$uncompress" ]; then
-  echo "Bad configuration: use unpacker and uncompress variables in mail rc file"
-  USCITA=$E_CANT_UNCOMPRESS
-  exit $USCITA
- fi
- if [ $(expr "$1" : ".*\/.*") -ne 0 ]; then
-  rpath=1
- else
-  rpath=0
- fi
- debecho "show_log: Here rpath=$rpath"
- for quale in custom daily weekly monthly; do
-  if [ -e $MAINDIR/$quale ]; then
-   debecho "show_log: Searching in $quale conffile"
-   read_and_do read_log "$rpath" "$1"
-   if [ "$(cat "$NEWtmpFILE.$extension" 2>/dev/null)" = "$NEWtmpFILE" ]; then
-    USCITA=$BREAK_CYCLE
-    break
-   fi
-  fi
- done
- if [ $USCITA -ne $BREAK_CYCLE ]; then
-  echo "Can't find $1"
-  USCITA=$E_FILE_NOFIND
-  exit $USCITA
- fi
+	debecho "show_log: input pager: pager=$pager -- PAGER=$PAGER"
+	if [ ! -z "$pager" ]
+	then
+		PAGER="$pager"
+	fi
+	if [ -z "$PAGER" ]
+	then
+		PAGER=$(which less)
+		if [ -z "$PAGER" ]
+		then
+			PAGER=$(which more)
+		fi
+		if [ -z "$PAGER" ]
+		then
+			echo "Can't find a pager! Use pager variable in main rc file or "
+			echo "PAGER environnement variable"
+			USCITA=$E_NO_PAGER
+			exit $USCITA
+		fi
+		if [ ! -x "$PAGER" ]
+		then
+			echo "Can't exec pager $PAGER!"
+			USCITA=$E_NO_PAGER
+			exit $USCITA
+		fi
+	fi
+	debecho "show_log: Using pager $PAGER"
+	if [ -z "$unpacker" ] || [ -z "$uncompress" ]
+	then
+		echo "Bad configuration: use unpacker and uncompress variables in mail rc file"
+		USCITA=$E_CANT_UNCOMPRESS
+		exit $USCITA
+	fi
+	if [ $(expr "$1" : ".*\/.*") -ne 0 ]
+	then
+		rpath=1
+	else
+		rpath=0
+	fi
+	debecho "show_log: Here rpath=$rpath"
+	for quale in custom daily weekly monthly
+	do
+		if [ -e $MAINDIR/$quale ]
+		then
+			debecho "show_log: Searching in $quale conffile"
+			read_and_do read_log "$rpath" "$1"
+			if [ "$(cat "$NEWtmpFILE.$extension" 2>/dev/null)" = "$NEWtmpFILE" ]
+			then
+				USCITA=$BREAK_CYCLE
+				break
+			fi
+		fi
+	done
+	if [ $USCITA -ne $BREAK_CYCLE ]
+	then
+		echo "Can't find $1"
+		USCITA=$E_FILE_NOFIND
+		exit $USCITA
+	fi
 }
 
 # See mail_to_admin

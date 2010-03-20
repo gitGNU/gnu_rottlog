@@ -13,7 +13,7 @@ To install this package:
 2. Run ./configure
 3. Run make
 4. Eventually make some documentation with 'ps' or 'pdf' or 'html' targets
-5. Become root and, or use sudo to, run 'make install'
+5. Become root, or use sudo to, run 'make install'
 6. Verify /etc/rottlog/{rc,weekly} will work with your system.  Add other
    configurations as necessary.
 7. Create an archive directory: /srv/rottlog, or /var/log/rottlog, etc.
@@ -21,5 +21,6 @@ To install this package:
 
    30 03 * * * /usr/sbin/rottlog
 
-When running make install, /etc/rottlog files will be overwritten.
+When running make install, existing /etc/rottlog files will be overwritten.
 
+It is best to disable logrotate (usually through cron) if present.
