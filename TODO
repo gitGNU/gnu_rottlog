@@ -8,9 +8,6 @@ extension when specified through rc.
 
 Add support for xz.
 
-PREFIX is /usr/local, but does not allow modification of the prefix
-at configure time.  This should be fixed.
-
 Remove cruft.  Rot[t]log needs to be simpler than it is.
 
 Change rotate style to a date format (e.g. foo.log.20100318).

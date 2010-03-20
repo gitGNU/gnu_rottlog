@@ -124,7 +124,7 @@ then
   AC_MSG_WARN([Can't attach mimencoded logs in email.])
 fi
 
-AC_SUBST(prefix,/usr/local)
+#AC_SUBST(prefix,/usr)
 AC_SUBST(bindir,${prefix}/sbin)
 AC_SUBST(datadir,[])
 
