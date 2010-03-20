@@ -1,6 +1,7 @@
 2010.03.19 <sinuhe@gnu.org>
 
 * Release 0.72.
+* Modify spec file to install to /usr/sbin/.
 
 2010.03.18 <sinuhe@gnu.org>
 
