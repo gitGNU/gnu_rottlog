@@ -13,6 +13,13 @@ Remove cruft.  Rot[t]log needs to be simpler than it is.
 Change rotate style to a date format (e.g. foo.log.20100318).
 Remove other rotate styles?
 
-Test Log2Rot, virottrc, ConfRottRc.
+Test Log2Rot, virottrc, ConfRottRc, MakeSlack.sh. Do we really
+need virottrc/ConfRottRc?
 
 Create default /etc/cron.d/rottlog file.
+
+Add a syntax checker and simplify the configuration files, (do we really
+need four plus conf files?).
+
+IDEA: Add a log analysis tool, perhaps moving the reporting features
+to it.
