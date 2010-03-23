@@ -28,6 +28,11 @@
 * Copy config.{sub,guess} instead of make symlink.
 * Test for texinfo build.
 
+2009.12.27 <sinuhe@gnu.org>
+
+* Add RPM spec file.
+* Remove man pages, using only texinfo.
+
 2009.10.01 <sinuhe@gnu.org>
 
 * Remove 0 exit code variable, since this always has the same meaning
