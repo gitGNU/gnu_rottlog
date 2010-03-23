@@ -128,7 +128,7 @@ fi
 AC_SUBST(bindir,${prefix}/sbin)
 AC_SUBST(datadir,[])
 
-AC_SUBST(MANDIR,/usr/man)
+#AC_SUBST(MANDIR,/usr/man)
 AC_SUBST(LOG_MODE,0500)
 AC_SUBST(ETC_MODE,0300)
 AC_SUBST(ROTT_STATDIR,/var/lib/rottlog)
