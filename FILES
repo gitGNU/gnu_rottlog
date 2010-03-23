@@ -3,9 +3,9 @@ COPYING
 COPYING.FDL
 ChangeLog
 INSTALL
+LOG2ROT
 NEWS
 README
-README.Log2Rot
 TODO
 VERSION
 Makefile.in
@@ -24,7 +24,7 @@ mdate-sh
 missing
 mkinstalldirs
 src/rottlog
-src/Log2Rot
+src/log2rot
 rc/rc
 rc/weekly
 rottlog.spec

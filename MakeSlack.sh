@@ -1,7 +1,7 @@
 #!/bin/bash
 # Slackware distribution script
 # Copyright 2003, 2004 Stefano Falsetto <falsetto@gnu.org>
-# Copyright 2008 David Egan Evans <sinuhe@gnu.org>
+# Copyright 2008, 2010 David Egan Evans <sinuhe@gnu.org>
 #
 # This program is free software.  You can redistribute it, or modify it,
 # or both, under the terms of the GNU General Public License version 3
@@ -31,7 +31,7 @@ fi
 
 . ./VERSION
 
-PRG="src/rottlog src/Log2Rot"
+PRG="src/rottlog src/log2rot"
 DOC="COPYING AUTHORS NEWS ChangeLog README INSTALL TODO VERSION"
 MANUALS="$(cat FILES|grep "^man/"|grep -v "texinfo"|cut -d'/' -f2|while read a; do echo -n "$a "; done)"
 MANSECTS="$(cat FILES|grep "^man/"|grep -v "texinfo"|cut -d'/' -f2|cut -d'.' -f2|sort|uniq|tr '\n' ' ')"
@@ -71,7 +71,7 @@ for INFOFILE in ./man/texinfo/*.info; do
   cp $INFOFILE $SROOT/usr/info
 done
 
-for i in rottlog Log2Rot; do
+for i in rottlog log2rot; do
   chmod 500 $SROOT/usr/sbin/$i
   chown root.root $SROOT/usr/sbin/$i
 done

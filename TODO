@@ -15,7 +15,7 @@ Remove cruft.  Rot[t]log needs to be simpler than it is.
 
 Add rotate style to use a date format (e.g. foo.log.20100318).
 
-Update and test Log2Rot, MakeSlack.sh.
+Update and test log2rot, MakeSlack.sh.
 
 Create default /etc/cron.d/rottlog file.
 
