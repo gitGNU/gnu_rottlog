@@ -17,7 +17,7 @@
 #
 
 AC_PREREQ(2.57)
-AC_INIT(rottlog,0.72.1,[sinuhe@gnu.org])
+AC_INIT(rottlog,0.72.2,[sinuhe@gnu.org])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/rottlog])
 
@@ -124,11 +124,10 @@ then
   AC_MSG_WARN([Can't attach mimencoded logs in email.])
 fi
 
-#AC_SUBST(prefix,/usr)
 AC_SUBST(bindir,${prefix}/sbin)
 AC_SUBST(datadir,[])
 
-#AC_SUBST(MANDIR,/usr/man)
+#AC_SUBST(MANDIR,${prefix}/man)
 AC_SUBST(LOG_MODE,0500)
 AC_SUBST(ETC_MODE,0300)
 AC_SUBST(ROTT_STATDIR,/var/lib/rottlog)

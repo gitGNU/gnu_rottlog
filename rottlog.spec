@@ -57,12 +57,15 @@ fi
 
 %files
 %defattr(-,root,root)
-%doc AUTHORS ChangeLog COPYING* INSTALL NEWS README* TODO
+%doc AUTHORS ChangeLog COPYING* INSTALL LOG2ROT NEWS README TODO
 %{_bindir}/*
 %{_infodir}/*
 
 %changelog
-* Fri Mar 19 2010 D. E. Evans <sinuhe@gnu.org>
+* Fri Mar 23 2010 D. E. Evans <sinuhe@gnu.org>
+- Add log2rot doc.
+
+* Fri Mar 20 2010 D. E. Evans <sinuhe@gnu.org>
 - Install to sbin, not bin.
 - Toggle release for 0.72.1.
 

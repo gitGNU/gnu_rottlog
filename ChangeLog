@@ -2,6 +2,8 @@
 
 * Remove virottrc, ConfRottRC.
 * Rename Log2Rot.
+* Rename Log2Rot doc file and include with .spec.
+* Don't use static install directories.
 
 2010.03.20 <sinuhe@gnu.org>
 
