@@ -21,7 +21,6 @@
 MAINPRG="rottlog"
 MAINDIR="src/"
 VER="ver"
-EDIT="src/virottrc"
 source ./VERSION
 VER_FILE="$MAINPRG-$(date "+%d-%m-%Y-%H.%M.%S")"
 MAIL="[sinuhe@gnu\.org]"
@@ -53,19 +52,6 @@ if [ ! -s tmp/newrottlog ]; then
 	exit 3
 fi
 
-# Modify virottrc to integrate declared variables.
-echo -n "virottrc, "
-chmod 0700 $MAINDIR/$MAINPRG
-sed -e 's/^MAINDIR=.*/MAINDIR=\"\@MAINDIR\"/' $EDIT >tmp/virottrc
-if [ ! -s tmp/virottrc ]; then
-	echo "ERROR EXECUTING SED!!"
-	echo "PLEASE CHECK WHAT HAPPENED!!"
-	exit 4
-fi
-cp -v $EDIT $VER/$EDIT-$(date "+%d-%m-%Y-%H.%M.%S")
-#mv tmp/virottrc $EDIT
-chmod 0700 $EDIT
-  
 # Update configure script to integrate declared variables,
 # and prepare for build environment.
 echo -n "configure.ac, "
@@ -93,7 +79,6 @@ cat -s FILES |grep -v  "^#"|while read i; do
 cp -rv ./$i tmp/$MAINPRG-$VERSION/$i
 done
 cp -v tmp/newrottlog tmp/$MAINPRG-$VERSION/src/rottlog
-cp -v tmp/virottrc tmp/$MAINPRG-$VERSION/src/virottrc
 cp -v tmp/configure.ac tmp/$MAINPRG-$VERSION/configure.ac
 
 # Get rid of Arch cruft.

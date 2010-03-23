@@ -1,3 +1,7 @@
+2010.03.23 <sinuhe@gnu.org>
+
+* Remove virottrc, ConfRottRC.
+
 2010.03.20 <sinuhe@gnu.org>
 
 * Allow configure to set prefix.

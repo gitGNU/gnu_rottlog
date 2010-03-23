@@ -28,19 +28,6 @@ DIST_SUBDIRS = src rc doc
 tgz: all
 	./MakeSlack.sh
 
-virottrc:
-	@echo -n "Updating virottrc bash code... "
-	@sed -e 's/^MAINDIR=.*/MAINDIR=\"$(esc_ETCDIR)\"/' \
-	  -e 's/^BASE_TMP_DIR=.*/BASE_TMP_DIR=\"$(esc_TMPDIR)\"/' \
-	    src/virottrc >newvirottrc
-	@if test -f newvirottrc ; then \
-	  echo "OK"; \
-	  cp -f newvirottrc src/virottrc; \
-	else \
-	  echo "ERROR!!"; \
-	  exit 1; \
-	fi
-
 rottlog:
 	@echo -n "Updating rottlog bash code... "
 	@sed -e 's/^MAINDIR=.*/MAINDIR=\"$(esc_ETCDIR)\"/' \
@@ -79,8 +66,3 @@ install-data-local:
 
 install-exec-hook:
 	$(INSTALL_SCRIPT) $(srcdir)/src/rottlog $(bindir)/rottlog
-#	$(INSTALL_SCRIPT) $(srcdir)/src/virottrc $(bindir)/virottrc
-#	$(LN_S) -f $(bindir)/virottrc $(bindir)/virottmonth
-#	$(LN_S) -f $(bindir)/virottrc $(bindir)/virottday
-#	$(LN_S) -f $(bindir)/virottrc $(bindir)/virottweek
-#	$(LN_S) -f $(bindir)/virottrc $(bindir)/virottcustom

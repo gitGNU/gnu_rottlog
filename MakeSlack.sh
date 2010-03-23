@@ -31,7 +31,7 @@ fi
 
 . ./VERSION
 
-PRG="src/rottlog src/virottrc"
+PRG="src/rottlog src/Log2Rot"
 DOC="COPYING AUTHORS NEWS ChangeLog README INSTALL TODO VERSION"
 MANUALS="$(cat FILES|grep "^man/"|grep -v "texinfo"|cut -d'/' -f2|while read a; do echo -n "$a "; done)"
 MANSECTS="$(cat FILES|grep "^man/"|grep -v "texinfo"|cut -d'/' -f2|cut -d'.' -f2|sort|uniq|tr '\n' ' ')"
@@ -71,13 +71,9 @@ for INFOFILE in ./man/texinfo/*.info; do
   cp $INFOFILE $SROOT/usr/info
 done
 
-for i in rottlog virottrc; do
+for i in rottlog Log2Rot; do
   chmod 500 $SROOT/usr/sbin/$i
   chown root.root $SROOT/usr/sbin/$i
-done
-
-for p in month week day custom; do
-  ln -s virottrc $SROOT/usr/sbin/virott${p}
 done
 
 mkdir -p $SROOT/install
@@ -86,13 +82,8 @@ PACKAGE DESCRIPTION:
 
 rottlog: This is GNU Rot[t]Log v.$VERSION
 rottlog: 
-rottlog: archive, rotates, compresses, and mails system logs.
+rottlog: The GNU log management tool: archive and compress system logs.
 rottlog: 
-rottlog: This is a replacement to Red Hat's logrotate. It have similar
-rottlog: syntax, but more powerful features to cut and store logs. 
-rottlog: It's all written in BASH (2.x compatible).
-rottlog: 
-rottlog:
 EOF
 
 cat <<EOF >$SROOT/install/doinst.sh
