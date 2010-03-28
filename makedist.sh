@@ -46,9 +46,10 @@ sed -e "s/^VERSION=.*/VERSION=\"$VERSION\"/"  \
     -e 's/^STATDIR=.*/STATDIR=\"\@STATDIR\"/' \
     -e 's/^LOCK=.*/LOCK=\"@LOCKFILE\"/' \
     -e 's/^DEBUG=.*/DEBUG=/' $MAINDIR/$MAINPRG >tmp/newrottlog
-if [ ! -s tmp/newrottlog ]; then
-	echo "ERROR EXECUTING SED!!"
-	echo "PLEASE CHECK WHAT HAPPENED!!"
+if test ! -s tmp/newrottlog
+then
+	echo "ERROR EXECUTING SED!"
+	echo "PLEASE CHECK WHAT HAPPENED!"
 	exit 3
 fi
 
@@ -58,9 +59,10 @@ echo -n "configure.ac, "
 sed -e s/\@VERSION/$VERSION/ \
     -e "s/AC_INIT.*/AC_INIT(rottlog,$VERSION,$MAIL)/" \
     configure.ac >tmp/configure.ac
-if [ ! -s tmp/configure.ac ]; then
-	echo "ERROR EXECUTING SED!!"
-	echo "PLEASE CHECK WHAT HAPPENED!!"
+if ! -s tmp/configure.ac
+then
+	echo "ERROR EXECUTING SED!"
+	echo "PLEASE CHECK WHAT HAPPENED!"
 	exit 5
 fi
 cp tmp/configure.ac configure.ac
@@ -75,8 +77,9 @@ mkdir -p tmp/$MAINPRG-$VERSION/src
 mkdir -p tmp/$MAINPRG-$VERSION/rc
 mkdir -p tmp/$MAINPRG-$VERSION/doc
 
-cat -s FILES |grep -v  "^#"|while read i; do
-cp -rv ./$i tmp/$MAINPRG-$VERSION/$i
+cat -s FILES |grep -v  "^#"|while read i
+do
+	cp -rv ./$i tmp/$MAINPRG-$VERSION/$i
 done
 cp -v tmp/newrottlog tmp/$MAINPRG-$VERSION/src/rottlog
 cp -v tmp/configure.ac tmp/$MAINPRG-$VERSION/configure.ac
@@ -84,14 +87,16 @@ cp -v tmp/configure.ac tmp/$MAINPRG-$VERSION/configure.ac
 # Get rid of Arch cruft.
 echo "Press Enter to create tarball:"
 read i
-if [ "$i" = "" ]; then
+if test "$i" = ""
+then
 	cd tmp
 	find $MAINPRG-$VERSION -name '{arch}' -type d -exec rm -Rf {} \;
 fi
 
 # Make the archive
 tar cfvz ../tar/$MAINPRG-$VERSION.tar.gz $MAINPRG-$VERSION
-if [ $? -ne 0 ]; then
+if test $? -ne 0
+then
 	echo "An error occurred while assembling the tar ball."
 	exit 2;
 fi
@@ -99,11 +104,13 @@ rm -Rf $MAINPRG-$VERSION
 cd ..
 
 # Check for gpg2 (requires gpg-agent)
-echo "GPG signing tarball..."
-if [ -x /usr/bin/gpg ]; then
+echo "Signing tarball with GnuPG."
+if test -x /usr/bin/gpg
+then
 	gpg -b tar/$MAINPRG-$VERSION.tar.gz
 	gpg --clearsign tar/$MAINPRG-$VERSION.tar.gz
-elif [ -x /usr/local/bin/gpg ]; then
+elif test -x /usr/local/bin/gpg
+then
 	gpg -b tar/$MAINPRG-$VERSION.tar.gz
 	gpg --clearsign tar/$MAINPRG-$VERSION.tar.gz
 else
@@ -111,5 +118,5 @@ else
 	gpg2 --clearsign tar/$MAINPRG-$VERSION.tar.gz
 fi
 
-[ ! -z "$1" ] && exit
+test ! -z "$1" && exit
 

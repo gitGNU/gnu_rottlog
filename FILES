@@ -2,6 +2,7 @@ AUTHORS
 COPYING
 COPYING.FDL
 ChangeLog
+FILES
 INSTALL
 LOG2ROT
 NEWS
@@ -10,7 +11,6 @@ TODO
 VERSION
 Makefile.in
 Makefile.am
-MakeSlack.sh
 aclocal.m4
 configure.ac
 configure
@@ -27,5 +27,6 @@ src/rottlog
 src/log2rot
 rc/rc
 rc/weekly
+rottlog.SlackBuild
 rottlog.spec
 texinfo.tex

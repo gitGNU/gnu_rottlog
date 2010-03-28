@@ -26,7 +26,7 @@ DIST_SUBDIRS = src rc doc
 #   in install-exec-hook
 
 tgz: all
-	./MakeSlack.sh
+	./rottlog.SlackBuild root wheel
 
 rottlog:
 	@echo -n "Updating rottlog bash code... "
