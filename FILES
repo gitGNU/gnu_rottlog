@@ -7,6 +7,7 @@ INSTALL
 LOG2ROT
 NEWS
 README
+SlackBuild
 TODO
 VERSION
 Makefile.in
@@ -27,6 +28,5 @@ src/rottlog
 src/log2rot
 rc/rc
 rc/weekly
-rottlog.SlackBuild
 rottlog.spec
 texinfo.tex

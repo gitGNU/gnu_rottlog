@@ -1,5 +1,9 @@
-We are proud to announce the release of Rot[t]log, version 0.72.1.
-This is a small bug fix release.
+We are proud to announce the release of Rot[t]log, version 0.72.2.
+
+This release includes updates to the SlackBuild script, better autoconf
+coding standards compliance, and for testing, Log2Rot returns as log2rot.
+virottrc and ConfRottRC are removed in favour of the existing rottlog
+functionality.
 
 GNU rottlog is the GNU log management utility.  It was originally
 authored in 2000 by Stefano Falsetto on Slackware to rotate
@@ -13,29 +17,25 @@ Getting the software
 
 Here are the GZIP compressed sources (258K):
 
-   <ftp://ftp.gnu.org/gnu/rottlog/rottlog-0.72.1.tar.gz>
-   <http://ftp.gnu.org/gnu/rottlog/rottlog-0.72.1.tar.gz>
+   <ftp://ftp.gnu.org/gnu/rottlog/rottlog-0.72.2.tar.gz>
+   <http://ftp.gnu.org/gnu/rottlog/rottlog-0.72.2.tar.gz>
 
 Here are the GnuPG detached signatures signed using key ID A036D05A:
 
-   <ftp://ftp.gnu.org/gnu/rottlog/rottlog-0.72.1.tar.gz.sig>
-   <http://ftp.gnu.org/gnu/rottlog/rottlog-0.72.1.tar.gz.sig>
+   <ftp://ftp.gnu.org/gnu/rottlog/rottlog-0.72.2.tar.gz.sig>
+   <http://ftp.gnu.org/gnu/rottlog/rottlog-0.72.2.tar.gz.sig>
 
 In order to check that the version of rottlog which you are going
 to install is an original and unmodified one, you should verify
 the GnuPG signature.  You can use the command:
 
-     gpg --verify rottlog-0.72.1.tar.gz.sig
+     gpg --verify rottlog-0.72.2.tar.gz.sig
 
 This checks whether the signature file matches the source file.
 You should see a message indicating that the signature is good and
 made by the signing key.  Make sure that you have the right key,
 either by checking the fingerprint of that key with other sources,
 or by checking signatures of the key.
-
-Here's the SHA256 checksum:
-
-7b29088887a0cc56def771383856c99b0ca97f003b082cb952250ab7244a91e0  rottlog-0.72.1.tar.gz
 
 The key is available from:
 

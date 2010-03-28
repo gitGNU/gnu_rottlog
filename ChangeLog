@@ -1,13 +1,13 @@
-2010.03.29 <sinuhe@gnu.org>
+2010.03.28 <sinuhe@gnu.org>
 
 * Update SlackBuild script for Slackware 13 and Rot[t]log 0.72.2.
+* Update for Release 0.72.2.
 
 2010.03.23 <sinuhe@gnu.org>
 
 * Remove virottrc, ConfRottRC.
 * Rename Log2Rot.
 * Rename Log2Rot doc file and include with .spec.
-* Don't use static install directories.
 
 2010.03.20 <sinuhe@gnu.org>
 

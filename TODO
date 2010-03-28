@@ -1,9 +1,6 @@
 TODO LIST:
 =========
 
-ROTT_STATDIR should not be statically defined. Instead, use
-coding standards localstatdir variable.
-
 If default rc specifies gzip, or bzip2, rottlog doesn't assume the
 extension.  bzip2 and gzip require the extension to function.  Currently,
 METAVARIABLES must specify the extension.  Rottlog should support the
@@ -13,9 +10,9 @@ Add support for xz.
 
 Remove cruft.  Rot[t]log needs to be simpler than it is.
 
-Add rotate style to use a date format (e.g. foo.log.20100318).
+Add rotate style to use a date format (e.g. foo.20100318).
 
-Create default /etc/cron.d/rottlog file.
+Create default /etc/cron.d/rottlog file for RPM spec file.
 
 Move syntax checking into a separate script; simplify the configuration
 files, (do we really need four plus conf files?).

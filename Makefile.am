@@ -25,16 +25,16 @@ DIST_SUBDIRS = src rc doc
 # - make install do not install bin_SCRIPTS. At the moment I install it
 #   in install-exec-hook
 
-tgz: all
-	./rottlog.SlackBuild root wheel
+txz: all
+	./SlackBuild root wheel
 
 rottlog:
 	@echo -n "Updating rottlog bash code... "
 	@sed -e 's/^MAINDIR=.*/MAINDIR=\"$(esc_ETCDIR)\"/' \
-	  -e 's/^STATDIR=.*/STATDIR=\"$(esc_STATDIR)\"/' \
-	  -e 's/^BASE_TMP_DIR=.*/BASE_TMP_DIR=\"$(esc_TMPDIR)\"/' \
-	  -e 's/^LOCK=.*/LOCK=\"$(esc_LOCKFILE)\"/' \
-	    src/rottlog >newrottlog
+	     -e 's/^STATDIR=.*/STATDIR=\"$(esc_STATDIR)\"/' \
+	     -e 's/^BASE_TMP_DIR=.*/BASE_TMP_DIR=\"$(esc_TMPDIR)\"/' \
+	     -e 's/^LOCK=.*/LOCK=\"$(esc_LOCKFILE)\"/' \
+	     src/rottlog >newrottlog
 	@if test -f newrottlog ; then \
 	  echo "OK"; \
 	  cp -f newrottlog src/rottlog; \
@@ -44,8 +44,8 @@ rottlog:
 	fi
 	@echo -n "Updating info pages... "
 	@lista='$(info_TEXINFOS)'; for M in $$lista; do \
-	  sed -e 's/\@\@ETCDIR/$(esc_ETCDIR)/' -e \
-		 's/\@\@STATDIR/$(esc_STATDIR)/' $$M > $$M.new; \
+	  sed -e 's/\@\@ETCDIR/$(esc_ETCDIR)/' \
+	      -e 's/\@\@STATDIR/\"$(esc_STATDIR)\"/' $$M > $$M.new; \
 	  if test ! -s $$M.new ; then \
 	    echo "ERROR"; \
 	    exit 1; \

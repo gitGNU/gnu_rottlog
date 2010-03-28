@@ -36,7 +36,7 @@ echo "Updating variables:"
 echo "VERSION=$VERSION"
 echo "MAINDIR=@MAINDIR"
 echo "MAINRC=\$MAINDIR/rc"
-echo "STATDIR=/var/run/rottlog"
+echo "STATDIR=/var/lib/rottlog"
 echo "DEBUG="
 echo
 echo -n "rottlog, "
@@ -59,7 +59,7 @@ echo -n "configure.ac, "
 sed -e s/\@VERSION/$VERSION/ \
     -e "s/AC_INIT.*/AC_INIT(rottlog,$VERSION,$MAIL)/" \
     configure.ac >tmp/configure.ac
-if ! -s tmp/configure.ac
+if test ! -s tmp/configure.ac
 then
 	echo "ERROR EXECUTING SED!"
 	echo "PLEASE CHECK WHAT HAPPENED!"

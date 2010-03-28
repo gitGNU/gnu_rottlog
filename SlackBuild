@@ -16,17 +16,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses>.
 #
 
-if [ $UID != 0 ]; then
-  echo "You must be root!"
-  exit
+if test $UID != 0
+then
+	echo "You must be root!"
+	exit
 fi
 
-if [ $# -lt 2 ]; then
-  echo 'Missing owner and group arguments!'
-  exit
+if test $# -lt 2
+then
+	echo 'Missing owner and group arguments!'
+	exit
 else
-  OWNER="$1"
-  GROUP="$2"
+	OWNER="$1"
+	GROUP="$2"
 fi
 
 . ./VERSION
@@ -51,9 +53,9 @@ chmod 0700 $SROOT/etc/rottlog
 #mkdir -p $SROOT/usr/doc/$PROGRAM
 mkdir -p $SROOT/usr/doc/$PROGRAM/rc
 mkdir $SROOT/usr/sbin
-mkdir -p $SROOT/var/run/rottlog
-chown root.root $SROOT/var/run/rottlog
-chmod 0700 $SROOT/var/run/rottlog
+mkdir -p $SROOT/var/lib/rottlog
+chown root.root $SROOT/var/lib/rottlog
+chmod 0700 $SROOT/var/lib/rottlog
 mkdir -p $SROOT/usr/info
 
 #for sect in $MANSECTS; do
@@ -68,44 +70,52 @@ mkdir -p $SROOT/usr/info
 
 cp $PRG $SROOT/usr/sbin
 cp $DOC $SROOT/usr/doc/$PROGRAM
-cp $RC $SROOT/etc/$PROGRAM
+cp $RC $SROOT/usr/doc/$PROGRAM/rc
+chmod -R +r $SROOT/usr/doc/$PROGRAM
 
-for INFOFILE in ./doc/*.info; do
-  cp $INFOFILE $SROOT/usr/info
+for INFOFILE in ./doc/*.info
+do
+	cp $INFOFILE $SROOT/usr/info
 done
 
 for i in rottlog log2rot; do
-  chmod 500 $SROOT/usr/sbin/$i
-  chown root.root $SROOT/usr/sbin/$i
+	chmod 755 $SROOT/usr/sbin/$i
+	chown root.root $SROOT/usr/sbin/$i
 done
 
 mkdir -p $SROOT/install
-cat <<EOF >$SROOT/install/slack-desc
-PACKAGE DESCRIPTION:
-
-rottlog: This is GNU Rot[t]Log v.$VERSION
+cat > $SROOT/install/slack-desc <<EOF
+rottlog: rottlog (a log management tool)
 rottlog: 
+rottlog: GNU Rot[t]Log v.$VERSION
 rottlog: The GNU log management tool: archive and compress system logs.
+rottlog: 
+rottlog: 
+rottlog: 
+rottlog: 
+rottlog: 
+rottlog: 
 rottlog: 
 EOF
 
-cat <<EOF >$SROOT/install/doinst.sh
+cat > $SROOT/install/doinst.sh <<EOF
 echo
 cat install/slack-desc
 
-sed '/PACKAGE LOCATION/r /install/slack-desc' < /var/log/packages/$PROGRAM >slack-desc.tmp
+sed '/PACKAGE DESCRIPTION/r /install/slack-desc' < /var/log/packages/$PROGRAM >slack-desc.tmp
 mv slack-desc.tmp /var/log/packages/$PROGRAM
 rm install/slack-desc
 
 EOF
 
 cd $SROOT
-makepkg -l y -c n $PRJDIR/$PROGRAM.tgz
-if [ $? -ne 0 ]; then
-  echo "An error occurred during package creation!"
-  exit 1;
+makepkg -l y -c n $PRJDIR/$PROGRAM.txz
+if test $? -ne 0
+then
+	echo "An error occurred during package creation!"
+	exit 1;
 fi
-chown $OWNER.$GROUP $PRJDIR/$PROGRAM.tgz
+chown $OWNER.$GROUP $PRJDIR/$PROGRAM.txz
 cd -
 rm -Rf $SROOT
 echo "Slackware package creation finished."

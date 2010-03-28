@@ -7,7 +7,7 @@
 
 Name: rottlog
 Summary: GNU rottlog is the GNU log management utility.
-Version: 0.72.1
+Version: 0.72.2
 Release: 1
 License: GPLv3+
 Vendor: Free Software Foundation
@@ -62,6 +62,9 @@ fi
 %{_infodir}/*
 
 %changelog
+* Fri Mar 28 2010 D. E. Evans <sinuhe@gnu.org>
+- Release 0.72.2
+
 * Fri Mar 23 2010 D. E. Evans <sinuhe@gnu.org>
 - Add log2rot doc.
 
