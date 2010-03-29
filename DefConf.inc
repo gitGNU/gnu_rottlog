@@ -1,6 +1,6 @@
 # Rot[t]Log installation defaults
 # Copyright 2002, 2003 Stefano Falsetto <falsetto@gnu.org>
-# Copyright 2008 David Egan Evans <sinuhe@gnu.org>
+# Copyright 2008, 2010 David Egan Evans <sinuhe@gnu.org>
 #
 # This program is free software.  You can redistribute it, or modify it,
 # or both, under the terms of the GNU General Public License version 3
@@ -17,17 +17,17 @@
 
 # Edit this file to fits your needs
 
-# Basedir to install rottlog and virott[rc|month|week|day]
+# Basedir to install rottlog and log2rot
 # Must be an absolute dirname used in LOG_OWN's PATH environnment
-BINDIR="/usr/local/sbin"
+BINDIR="/usr/sbin"
 
 # Basedir to install documentation dir
 # Must be an absolute dirname
-DOCDIR="/usr/local/doc"
+DOCDIR="/usr/share/doc"
 
 # Basedir to install man pages
 # Must be an absolute dirname
-MANDIR="/usr/local/man"
+MANDIR="/usr/share/man"
 
 # Set to 1 to compress with gzip man pages
 # Set to 0 to NOT to compress man pages
@@ -39,7 +39,7 @@ LOG_OWN="root"
 # Group of installed codes
 LOG_GROUP="root"
 
-# Permissions of rottlog and virott[rc|month|week|day|custom]
+# Permissions of rottlog and log2rot
 LOG_MODE=0500
 
 # Directory to store configuration files
