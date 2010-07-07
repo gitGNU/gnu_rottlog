@@ -292,7 +292,7 @@ then
 	EXTENSION="gz"
 	UNCOMPRESS="-c"
 else
-	source $CONFFILE
+	. $CONFFILE
 fi
 
 mkdir -p $ETCDIR

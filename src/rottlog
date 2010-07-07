@@ -367,7 +367,7 @@ collate_logfiles () {
 	local logname="$(basename $1)"
 	local arch_file="$2"
 	(
-		source $TMPROTTCOLLECT.$logname
+		. $TMPROTTCOLLECT.$logname
 		expand_metavar "$COLLECT_LOG" "$COLLECT_ARCDIR"
 		pcdpc="$expanded_metavars"
 
@@ -1463,7 +1463,7 @@ mail_norm() {
 
 # See mail_to_admin
 mail_stat() {
-	source $TMP_STATFILE
+	. $TMP_STATFILE
 	local end_refer=$(date "+%m/%d/%Y %H:%M:%S")
 	local date_end=$(date -d "$end_refer" "+%s")
 	local diff_s=$[ date_end - stamp_now ]
@@ -2287,7 +2287,7 @@ read_and_do() {
   read LINEA
   (
    if [ -f $TMP_PERIOD_RC ]; then
-    source $TMP_PERIOD_RC
+    . $TMP_PERIOD_RC
    fi
    while [ "$LINEA" != "}" ]
    do
@@ -3451,7 +3451,7 @@ update_stats() {
 		local newc=$(eval echo \$${2}_${1})
 		if [ -s $TMP_STATFILE ]
 		then
-			source $TMP_STATFILE
+			. $TMP_STATFILE
 			local newc=$[ newc + $(eval echo \$${2}_${1}) ]
 			sed -e "s/^$2_$1=.*/$2_$1=$newc/" \
 			       $TMP_STATFILE >$NEW_TMP_STATFILE
