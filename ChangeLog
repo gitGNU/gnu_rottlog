@@ -1,3 +1,12 @@
+2010.07.21 <sinuhe@gnu.org>
+
+* Update SlackBuild script to run configure and make before
+  building a package.
+
+2010.07.07 <sinuhe@gnu.org>
+
+* For Bourne and POSIX shell compatibility, use . not source.
+
 2010.03.28 <sinuhe@gnu.org>
 
 * Update SlackBuild script for Slackware 13 and Rot[t]log 0.72.2.

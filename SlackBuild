@@ -43,18 +43,20 @@ PROGRAM="rottlog-$VERSION"
 PRJDIR="$PWD/tar/Slackware"
 
 rm -Rf "$SROOT"
+./configure --prefix=/usr
+make
 
 echo "Making Slackware package..."
 mkdir -p $PRJDIR
 mkdir -p $SROOT/etc/rottlog
-chown root.root $SROOT/etc/rottlog
+chown root:root $SROOT/etc/rottlog
 chmod 0700 $SROOT/etc/rottlog
 
 #mkdir -p $SROOT/usr/doc/$PROGRAM
 mkdir -p $SROOT/usr/doc/$PROGRAM/rc
 mkdir $SROOT/usr/sbin
 mkdir -p $SROOT/var/lib/rottlog
-chown root.root $SROOT/var/lib/rottlog
+chown root:root $SROOT/var/lib/rottlog
 chmod 0700 $SROOT/var/lib/rottlog
 mkdir -p $SROOT/usr/info
 
@@ -71,7 +73,9 @@ mkdir -p $SROOT/usr/info
 cp $PRG $SROOT/usr/sbin
 cp $DOC $SROOT/usr/doc/$PROGRAM
 cp $RC $SROOT/usr/doc/$PROGRAM/rc
-chmod -R +r $SROOT/usr/doc/$PROGRAM
+chmod +r $SROOT/usr/doc/$PROGRAM
+chmod +r $SROOT/usr/doc/$PROGRAM/*
+chmod +r $SROOT/usr/doc/$PROGRAM/rc/*
 
 for INFOFILE in ./doc/*.info
 do
@@ -80,7 +84,7 @@ done
 
 for i in rottlog log2rot; do
 	chmod 755 $SROOT/usr/sbin/$i
-	chown root.root $SROOT/usr/sbin/$i
+	chown root:root $SROOT/usr/sbin/$i
 done
 
 mkdir -p $SROOT/install
@@ -115,7 +119,7 @@ then
 	echo "An error occurred during package creation!"
 	exit 1;
 fi
-chown $OWNER.$GROUP $PRJDIR/$PROGRAM.txz
+chown $OWNER:$GROUP $PRJDIR/$PROGRAM.txz
 cd -
 rm -Rf $SROOT
 echo "Slackware package creation finished."
