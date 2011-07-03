@@ -30,14 +30,14 @@ trap 'rm -rf $TEMPDIR ; exit $USCITA' 0
 # Suppress C-c (SIGINT) during TEMPDIR generation
 trap '' 2
 
-debecho () {
+debecho() {
 	if test ! -z "$DEBUG"
 	then
 		echo "$1" >&2
 	fi
 }
 
-expand_filenames () {
+expand_filenames() {
 	# Filename expansion
 	debecho "Begin filename expansion"
 	if test $(expr index "$filenames" ",") -ne 0
@@ -135,7 +135,7 @@ is_readable() {
 }
 
 # This should be a library shared with rottlog.
-make_tmpdir () {
+make_tmpdir() {
         # Following code was taken from (with changes):
         # checkinstall v1.4.1 (c) Felipe Eduardo Sanchez Diaz Duran
 
@@ -197,7 +197,7 @@ trim() {
 	eval $2=\"'$tmp'\"
 }
 
-write_to_file () {
+write_to_file() {
 	# extension?
 	local fn=$1
 	shift

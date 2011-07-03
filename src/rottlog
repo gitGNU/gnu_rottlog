@@ -93,7 +93,7 @@ BREAK_CYCLE=255
 #
 
 # See read_and_do
-analyze_logpart () {
+analyze_logpart() {
 	# How many bytes must remain?
 	qdldl="$1"
 	local poschar=$[ ${#qdldl} - 1 ]
@@ -192,7 +192,7 @@ banner() {
 }
 
 # See parse_period
-checkitem () {
+checkitem() {
 	if [ $(expr " $1 " : ".* $2 .*") -eq 0 ]
 	then
 		echo "Error in bound definition. Token: $2"
@@ -201,7 +201,7 @@ checkitem () {
 	fi
 }
 
-check_last_rotate () {
+check_last_rotate() {
 	debecho "check_last_rotate: Checking for $3(ly) config file"
 	if [ ! -f "$1" ]
 	then
@@ -244,7 +244,7 @@ check_last_rotate () {
 }
 
 # See parse_period
-check_mwd () {
+check_mwd() {
 	local p=$(echo $token|cut -d"$1" -f1)
 	get_control_info date date_file
 	get_control_info stamp stamp_file
@@ -288,7 +288,7 @@ check_mwd () {
 }
 
 # See read_and_do
-check_perms () {
+check_perms() {
 	local tmpown
 	local tmpgrp
 	debecho "check_perms: Checking permissions..."
@@ -338,7 +338,7 @@ check_perms () {
 }
 
 # See Main
-checkrc () {
+checkrc() {
 	while [ $# -ne 0 ]
 	do
 		echo "==========================================================================="
@@ -360,7 +360,7 @@ checkrc () {
 }
 
 # See prepare_rotate
-collate_logfiles () {
+collate_logfiles() {
 	local logname="$(basename $1)"
 	local arch_file="$2"
 	(
@@ -491,7 +491,7 @@ collate_logfiles () {
 }
 
 # See read_and_do
-collect_log_info () {
+collect_log_info() {
 	local p=$2
 	local find="$1"
 
@@ -525,7 +525,7 @@ collect_log_info () {
 	done
 }
 
-cp_mod_own () {
+cp_mod_own() {
 	if [ -z "$follow_symlinks" ]
 	then
 		local lsdir=$(ls -ld "$1"|tr -s ' ')
@@ -637,7 +637,7 @@ cp_mod_own () {
 }
 
 # See collate_logfiles
-copy_tree () {
+copy_tree() {
 	local destd="$2"
 	local lenb=0       # ${#2}
 	local newd=
@@ -665,7 +665,7 @@ copy_tree () {
 	done
 }
 
-debecho () {
+debecho() {
 	if [ ! -z "$DEBUG" ]
 	then
 		echo "$1" >&2
@@ -867,7 +867,7 @@ do_rotate() {
 }
 
 # See read_and_do
-expand_filenames () {
+expand_filenames() {
 	# Filename expansion
 	local index=0
 	local addr=0
@@ -1057,7 +1057,7 @@ expand_metavar() {
 }
 
 # See Main
-fill_timevar () {
+fill_timevar() {
 	debecho "fill_timevar: filling time-related variables"
 	local string_date=$(LANG=en date -d "$1" \
 	                  "+%s %m %d %Y %H %M %a %b %A %B"| tr A-Z a-z)
@@ -1075,7 +1075,7 @@ fill_timevar () {
 }
 
 # See summarize_loginfo
-findlog () {
+findlog() {
 	local log=
 	local q=
 	case $quale in
@@ -1182,7 +1182,7 @@ findlog () {
 	done
 }
 
-get_control_info () {
+get_control_info() {
 	local NameOfCtrlFile="$STATDIR/.${log//\//_}.rtt"
 	case "$1" in
 	date|stamp|size|partial)
@@ -1333,7 +1333,7 @@ is_wildcard() {
 }
 
 # See make_storefile and expand_metavar
-lastnum () {
+lastnum() {
 	[ -z "$2" ] && local add=0 || local add=$2
 	local crit=$1
 	debecho "lastnum: Adding number: $add"
@@ -1625,7 +1625,7 @@ make_metapos() {
 }
 
 # See expand_metavar and Main
-make_tmpdir () {
+make_tmpdir() {
 	# Following code was taken from (with changes):
 	# checkinstall v1.4.1 (c) Felipe Eduardo Sanchez Diaz Duran
 
@@ -1682,7 +1682,7 @@ make_tmpdir () {
 	fi
 }
 
-make_storefile () {
+make_storefile() {
 	if [ ! -z "$param_storefile" ]
 	then
 		debecho "make_storefile: Before expand_metavar:"
@@ -1704,7 +1704,7 @@ make_storefile () {
 }
 
 # See prepare_rotate
-parse_period () {
+parse_period() {
 	local exit_t=
 	local OLDIFS="$IFS"
 	local list_elem_lday="monday tuesday wednesday thursday friday \
@@ -2030,7 +2030,7 @@ parse_period () {
 }
 
 # See read_and_do
-prepare_rotate () {
+prepare_rotate() {
  local orig_pcdpc="$pcdpc"
  for log in ${pcldr[@]}; do
   # If logfile has been already rotated/archived
@@ -2896,7 +2896,7 @@ read_daily() {
 }
 
 # See show_log
-read_log () {
+read_log() {
 	local old_pcdpc="$pcdpc"
 	for log in ${pcldr[@]}
 	do
@@ -3111,7 +3111,7 @@ read_weekly() {
 }
 
 # See do_rotate
-remove_from_ctrlfile () {
+remove_from_ctrlfile() {
 	# Protect each '/' with '\' : ddd/fff --> ddd\/fff
 	local ESCAPED=${1//\//\\/}
 	sed -e "/^$ESCAPED/d" $DELAYED_FILES >$NEWtmpFILE
@@ -3205,7 +3205,7 @@ rotate_logrotate() {
 	return $START_ROTATE
 }
 
-run_lastaction () {
+run_lastaction() {
 	debecho "run_lastaction: Here LASTACTION=$LASTACTION"
 	if [ ! -z "$LASTACTION" ] && [ -z "$DISABLE_SCRIPT" ]
 	then
@@ -3221,7 +3221,7 @@ run_lastaction () {
 }
 
 # See read_{and_do,rcopts}
-setup_vars () {
+setup_vars() {
 	if [ "$1" = "set" ]
 	then
 		def_maxdepth=${MAXDEPTH-0}
@@ -3306,7 +3306,7 @@ setup_vars () {
 	# TODO: add mailopt_* ??
 }
 
-show_defaults () {
+show_defaults() {
 	local VARS="VERSION MAINDIR MAINRC STATDIR DELAYED_FILES DATE_OFFSET \
 	            BASE_TMP_DIR DEBUG mail pager follow_symlinks dir_own \
 	            dir_grp dir_perm fil_own fil_grp fil_perm tabooext"
@@ -3325,7 +3325,7 @@ show_defaults () {
 }
 
 # See Main
-show_log () {
+show_log() {
 	debecho "show_log: input pager: pager=$pager -- PAGER=$PAGER"
 	if [ ! -z "$pager" ]
 	then
@@ -3398,7 +3398,7 @@ EOF
 }
 
 # See Main
-summarize_loginfo () {
+summarize_loginfo() {
 	# Cycle between daily, weekly, monthly, and custom
 	# quando trovo il file in uno di questi tre visualizzo le info ed esco
 	for quale in custom daily weekly monthly
@@ -3412,7 +3412,7 @@ summarize_loginfo () {
 }
 
 # See Main
-usage () {
+usage() {
 	echo
 	echo "Usage: rottlog [-dlv] [--help] [-p CMD] [-s FILE] [--version]"
 	echo "               [--checkrc all|custom|daily|weekly|monthly]"
