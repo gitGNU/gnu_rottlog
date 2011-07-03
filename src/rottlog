@@ -1,7 +1,7 @@
 #!/bin/bash
 # GNU Rot[t]log
 # Copyright 2001, 2002, 2003, 2004, 2005 Stefano Falsetto <falsetto@gnu.org>
-# Copyright 2008, 2009, 2010 David Egan Evans <sinuhe@gnu.org>
+# Copyright 2008, 2009, 2010, 2011 David Egan Evans <sinuhe@gnu.org>
 #
 # This program is free software.  You can redistribute it, or modify it,
 # or both, under the terms of the GNU General Public License version 3
@@ -193,11 +193,11 @@ banner() {
 
 # See parse_period
 checkitem() {
-	if [ $(expr " $1 " : ".* $2 .*") -eq 0 ]
+	if test $(expr " $1 " : ".* $2 .*") -eq 0
 	then
-		echo "Error in bound definition. Token: $2"
-		USCITA=$E_BAD_RANGE
-		exit $USCITA
+		echo "Error in bound definition. Token: $2" 1>&2
+		EXIT=$E_BAD_RANGE
+		exit $EXIT
 	fi
 }
 
@@ -209,16 +209,16 @@ check_last_rotate() {
 		echo "0">"$1" 2>/dev/null
 		if [ $? -ne 0 ]
 		then
-			echo "Can't write to $1"
-			USCITA=$E_CANT_WRITE
-			exit $USCITA
+			echo "Can't write to $1" 1>&2
+			EXIT=$E_CANT_WRITE
+			exit $EXIT
 		fi
 		chmod 600 "$1" 2>/dev/null
 		if [ $? -ne 0 ]
 		then
-			echo "Can't change permission to file $1"
-			USCITA=$E_NO_CHMOD
-			exit $USCITA
+			echo "Can't change permission to file $1" 1>&2
+			EXIT=$E_NO_CHMOD
+			exit $EXIT
 		fi
 	fi
 	if [ -e "$1" ]
@@ -250,9 +250,9 @@ check_mwd() {
 	get_control_info stamp stamp_file
 	if [ $p -lt 1 ]
 	then
-		echo "$p is not a valid period!"
-		USCITA=$E_BAD_PERIOD
-		exit $USCITA
+		echo "$p is not a valid period!" 1>&2
+		EXIT=$E_BAD_PERIOD
+		exit $EXIT
 	fi
 	case $1 in
 	w)
@@ -265,10 +265,10 @@ check_mwd() {
 		offset="days"
 		;;
 	*)
-		echo "Internal Error in check_mwd"
-		echo "parameter: $@"
-		USCITA=$E_INTERNAL
-		exit $USCITA
+		echo "Internal Error in check_mwd" 1>&2
+		echo "parameter: $@" 1>&2
+		EXIT=$E_INTERNAL
+		exit $EXIT
 		;;
 	esac
 	# First time a log is handled must be rotated anyway
@@ -297,17 +297,17 @@ check_perms() {
 		debecho "check_perms: Checking for mode $1..."
 		if [ ${#1} -gt 4 ]
 		then
-			echo "Error analyzing $4 parameter"
-			echo "Invalid mode: too long!"
-			USCITA=$E_INVALID_MODE
-			exit $USCITA
+			echo "Error analyzing $4 parameter" 1>&2
+			echo "Invalid mode: too long!" 1>&2
+			EXIT=$E_INVALID_MODE
+			exit $EXIT
 		fi
 		if [ $(expr match "$1" "[01234567]*") -ne ${#1} ]
 		then
-			echo "Error analyzing $4 parameter"
-			echo "Invalid mode!"
-			USCITA=$E_INVALID_MODE
-			exit $USCITA
+			echo "Error analyzing $4 parameter" 1>&2
+			echo "Invalid mode!" 1>&2
+			EXIT=$E_INVALID_MODE
+			exit $EXIT
 		fi
 	fi
 	if [ "$2" != "" ]
@@ -316,10 +316,10 @@ check_perms() {
 		tmpvar=$(grep "^$2:" /etc/passwd 2>/dev/null|cut -d':' -f1)
 		if [ -z "$tmpvar" ]
 		then
-			echo "Error analyzing $4 parameter"
-			echo "Invalid owner! It doesn't exists in /etc/passwd."
-			USCITA=$E_INVALID_OWN
-			exit $USCITA
+			echo "Error analyzing $4 parameter" 1>&2
+			echo "Invalid owner! It doesn't exists in /etc/passwd." 1>&2
+			EXIT=$E_INVALID_OWN
+			exit $EXIT
 		fi
 	fi
 	tmpvar=
@@ -329,10 +329,10 @@ check_perms() {
 		tmpvar=$(grep "^$3:" /etc/group 2>/dev/null)
 		if [ -z "$tmpvar" ]
 		then
-			echo "Error analyzing $4 parameter"
-			echo "Invalid group! It doesn't exists in /etc/group."
-			USCITA=$E_INVALID_GRP
-			exit $USCITA
+			echo "Error analyzing $4 parameter" 1>&2
+			echo "Invalid group! It doesn't exists in /etc/group." 1>&2
+			EXIT=$E_INVALID_GRP
+			exit $EXIT
 		fi
 	fi
 }
@@ -383,9 +383,9 @@ collate_logfiles() {
 				debecho "collate_logfiles: No file to collate!"
 				return
 			else
-				echo "Can't find file to collate!"
-				USCITA=$E_NO_FILE_TO_COLLATE
-				exit $USCITA
+				echo "Can't find file to collate!" 1>&2
+				EXIT=$E_NO_FILE_TO_COLLATE
+				exit $EXIT
 			fi
 		fi
 
@@ -396,9 +396,9 @@ collate_logfiles() {
 		then
 			if [ ! -z "$COLLECT_DELAY" ]
 			then
-				echo "Delayed logfile is not in control file"
-				USCITA=$E_NOT_IN_DELAY
-				exit $USCITA
+				echo "Delayed logfile is not in control file" 1>&2
+				EXIT=$E_NOT_IN_DELAY
+				exit $EXIT
 			else
 				TOBEPACK=" "
 			fi
@@ -545,16 +545,16 @@ cp_mod_own() {
 
 	if [ -z "$own" ]
 	then
-		echo "Can't extract owner from filename!"
-		USCITA=$E_FILE_NOREAD
-		exit $USCITA
+		echo "Can't extract owner from filename!" 1>&2
+		EXIT=$E_FILE_NOREAD
+		exit $EXIT
 	fi
 
 	if [ -z "$grp" ]
 	then
-		echo "Can't extract group from filename!"
-		USCITA=$E_FILE_NOREAD
-		exit $USCITA
+		echo "Can't extract group from filename!" 1>&2
+		EXIT=$E_FILE_NOREAD
+		exit $EXIT
 	fi
 	SMODE=0
 	for num in 1 4 7
@@ -611,23 +611,23 @@ cp_mod_own() {
 		chown $own "$2" 2>/dev/null
 		if [ $? -ne 0 ]
 		then
-			echo "Can't change owner for $2"
-			USCITA=$E_INVALID_OWNER
-			exit $USCITA
+			echo "Can't change owner for $2" 1>&2
+			EXIT=$E_INVALID_OWNER
+			exit $EXIT
 		fi
 		chgrp $grp "$2" 2>/dev/null
 		if [ $? -ne 0 ]
 		then
-			echo "Can't change group for $2"
-			USCITA=$E_INVALID_GROUP
-			exit $USCITA
+			echo "Can't change group for $2" 1>&2
+			EXIT=$E_INVALID_GROUP
+			exit $EXIT
 		fi
 		chmod $NEWMODE "$2" 2>/dev/null
 		if [ $? -ne 0 ]
 		then
-			echo "Can't change permissions for $2"
-			USCITA=$E_INVALID_MODE
-			exit $USCITA
+			echo "Can't change permissions for $2" 1>&2
+			EXIT=$E_INVALID_MODE
+			exit $EXIT
 		fi
 	else
 		CHMOD="$NEWMODE"
@@ -707,9 +707,9 @@ do_rotate() {
 			then
 				# errore: il file non può essere di dimensioni inferiori alle
 				# precedenti. Può solo crescere
-				echo "Size of logfile is inconsistent"
-				USCITA=$E_BAD_SIZE
-				exit $USCITA
+				echo "Size of logfile is inconsistent" 1>&2
+				EXIT=$E_BAD_SIZE
+				exit $EXIT
 			elif [ $size_b -lt $dbl_qdl ]
 			then
 				if [ ! -z "$notifempty" ]
@@ -755,9 +755,9 @@ do_rotate() {
 					remove_from_ctrlfile "$1"
 					return 2
 				 else
-					echo "Archived log is not readable."
-					USCITA=$E_CANT_READ_OLD_LOGFILE
-					exit $USCITA
+					echo "Archived log is not readable." 1>&2
+					EXIT=$E_CANT_READ_OLD_LOGFILE
+					exit $EXIT
 				fi
 			fi
 			debecho "do_rotate: executing cp -p $old_rotated $tmpfil"
@@ -1190,10 +1190,10 @@ get_control_info() {
 		"^$1:"| cut -d':' -f2-)\""
 		;;
 	*)
-		echo "Internal error in get_control_info call"
-		echo "parameters: $@"
-		USCITA=$E_INTERNAL
-		exit $USCITA
+		echo "Internal error in get_control_info call" 1>&2
+		echo "parameters: $@" 1>&2
+		EXIT=$E_INTERNAL
+		exit $EXIT
 	esac
 }
 
@@ -1251,18 +1251,18 @@ is_readable() {
 			debecho "Missing? OK!"
 			return 1
 		else
-			echo "ERROR: Couldn't read $2 file!"
-			echo "Filename: $1"
-			USCITA=$E_FILE_NOREAD
-			exit $USCITA
+			echo "ERROR: Couldn't read $2 file!" 1>&2
+			echo "Filename: $1" 1>&2
+			EXIT=$E_FILE_NOREAD
+			exit $EXIT
 		fi
 	fi
 	if [ -L "$1" ] && [ $follow_symlinks -eq 0 ]
 	then
-		echo "Can't follow symbolic links!"
-		echo "Filename: $1"
-		USCITA=$E_SYMLINK
-		exit $USCITA
+		echo "Can't follow symbolic links!" 1>&2
+		echo "Filename: $1" 1>&2
+		EXIT=$E_SYMLINK
+		exit $EXIT
 	fi
 }
 
@@ -1309,9 +1309,9 @@ is_wildcard() {
 
 	case "$filna" in
 	*\]*|*\[*|*\{*|*\}*|*\?*)
-		echo "Only * wildcard can be used!"
-		USCITA=$E_BAD_WILDCARD
-		exit $USCITA
+		echo "Only * wildcard can be used!" 1>&2
+		EXIT=$E_BAD_WILDCARD
+		exit $EXIT
 		;;
 	esac
 
@@ -1625,6 +1625,7 @@ make_metapos() {
 }
 
 # See expand_metavar and Main
+# Why aren't we using mktemp?
 make_tmpdir() {
 	# Following code was taken from (with changes):
 	# checkinstall v1.4.1 (c) Felipe Eduardo Sanchez Diaz Duran
@@ -1759,9 +1760,9 @@ parse_period() {
 					op=$(echo "$token"|cut -d'+' -f1)
 					if [ -z "$op" ]
 					then
-						echo "Error in OR definition"
-						USCITA=$E_BAD_OR
-						exit $USCITA
+						echo "Error in OR definition" 1>&2
+						EXIT=$E_BAD_OR
+						exit $EXIT
 					fi
 					case "$op" in
 					monday|tuesday|wednesday|\
@@ -1781,9 +1782,9 @@ parse_period() {
 						local list_elem=$list_elem_smonth
 						;;
 					*)
-						echo "Error in inline OR definition!"
-						USCITA=$E_BAD_OR
-						exit $USCITA
+						echo "Error in inline OR definition!" 1>&2
+						EXIT=$E_BAD_OR
+						exit $EXIT
 						;;
 					esac
 					allop=${token//+/ }
@@ -1805,9 +1806,9 @@ parse_period() {
 					local checkminus=$(echo "$token"|cut -d'-' -f3-)
 					if [ ! -z "$checkminus" ]
 					then
-						echo "Error in range definition!"
-						USCITA=$E_BAD_RANGE
-						exit $USCITA
+						echo "Error in range definition!" 1>&2
+						EXIT=$E_BAD_RANGE
+						exit $EXIT
 					fi
 					case $token in
 					*monday*|*tuesday*|*wednesday*|\
@@ -1837,9 +1838,9 @@ parse_period() {
 						local list_elem=$list_elem_smonth
 						;;
 					*)
-						echo "Error in range definition!"
-						USCITA=$E_BAD_RANGE
-						exit $USCITA
+						echo "Error in range definition!" 1>&2
+						EXIT=$E_BAD_RANGE
+						exit $EXIT
 						;;
 					esac
 					begin_t=$(echo "$token"|cut -d'-' -f1)
@@ -1872,9 +1873,9 @@ parse_period() {
 							checkitem "$list_elem_smonth" "$begin_t"
 							;;
 						*)
-							echo "Error on end range!"
-							USCITA=$E_BAD_RANGE
-							exit $USCITA
+							echo "Error on end range!" 1>&2
+							EXIT=$E_BAD_RANGE
+							exit $EXIT
 							;;
 						esac
 					fi
@@ -1931,9 +1932,9 @@ parse_period() {
 						local cm="$(echo $token|cut -d':' -f2)"
 						if [ $ch -gt 23 ] || [ $cm -gt 59 ]
 						then
-							echo "Bad time definition!"
-							USCITA=$E_BAD_TIME
-							exit $USCITA
+							echo "Bad time definition!" 1>&2
+							EXIT=$E_BAD_TIME
+							exit $EXIT
 						fi
 						#Use timestamp??
 						crit="$crit && [ \"$ch:$cm\" $NOT= \"$now_hour:$now_min\" ]"
@@ -1979,9 +1980,9 @@ parse_period() {
 						debecho "parse_period: --> Exact day"
 						if [ $token -gt 31 ]
 						then
-							echo "There is no month long $token days!"
-							USCITA=$E_BAD_DAY
-							exit $USCITA
+							echo "There is no month long $token days!" 1>&2
+							EXIT=$E_BAD_DAY
+							exit $EXIT
 						fi
 						if [ $token -gt $ldom ]
 						then
@@ -1998,9 +1999,9 @@ parse_period() {
 						fi
 						;;
 					*)
-						echo "Error in period definition. Token: $token"
-						USCITA=$E_BAD_PERIOD
-						exit $USCITA
+						echo "Error in period definition. Token: $token" 1>&2
+						EXIT=$E_BAD_PERIOD
+						exit $EXIT
 						;;
 					esac
 				fi
@@ -2077,11 +2078,11 @@ prepare_rotate() {
   chmod $dir_perm "$pcdpc"
  fi
  if [ ! -d "$pcdpc" ]; then
-  echo "Directory to store compressed log doesn't exist!"
-  echo "Log=$log"
-  echo "Dir=$pcdpc"
-  USCITA=$E_NO_STOREDIR
-  exit $USCITA
+  echo "Directory to store compressed log doesn't exist!" 1>&2
+  echo "Log=$log" 1>&2
+  echo "Dir=$pcdpc" 1>&2
+  EXIT=$E_NO_STOREDIR
+  exit $EXIT
  fi
 
  make_storefile "$log"
@@ -2237,9 +2238,9 @@ read_and_do() {
    do
     debecho "read and do: including $i file..."
     if [ ! -r "$i" ]; then
-     echo "Can't read $i include file!"
-     USCITA=$E_CONF_NOTFOUND
-     exit $USCITA
+     echo "Can't read $i include file!" 1>&2
+     EXIT=$E_CONF_NOTFOUND
+     exit $EXIT
     fi
     sed -e '/^[[:space:]]*#.*/d' -e ' /^$/d' "$i" >>$PURGED_FILE
    done
@@ -2261,9 +2262,9 @@ read_and_do() {
    debecho "read and do: Making new file to be read"
    cat -s $PURGED_FILE|sed -e '/{/q'|grep -v '{' >$TMP_PERIOD_RC
    if [ ! -f $TMP_PERIOD_RC ]; then
-    echo "Undefined error in file $MAINDIR/$quale"
-    USCITA=$E_SYNTAX_ERROR
-    exit $USCITA
+    echo "Undefined error in file $MAINDIR/$quale" 1>&2
+    EXIT=$E_SYNTAX_ERROR
+    exit $EXIT
    fi
    debecho "read and do: calling read_rcopts"
    read_rcopts $TMP_PERIOD_RC write
@@ -2272,11 +2273,6 @@ read_and_do() {
    do
     read LINEA
    done
-   #if [ ]; then
-   #  echo "Syntax error in file $MAINDIR/$quale"
-   #  USCITA=$E_SYNTAX_ERROR
-   #  exit $USCITA
-   #fi
   fi
   # If there are multiple files to rotate with same rules
   filenames="${LINEA/{*/}"
@@ -2297,18 +2293,18 @@ read_and_do() {
       forceday|period)
        shift
        if [ "$quale" != "custom" ]; then
-        echo "parameter 'period' can be used only in custom configuration file!"
-        USCITA=$E_BAD_FORCEDAY
-        exit $USCITA
+        echo "parameter 'period' can be used only in custom configuration file!" 1>&2
+        EXIT=$E_BAD_FORCEDAY
+        exit $EXIT
        fi
        # Here I can put syntax checking, but no actions must
        # be performed before expanded filenames.
        PERIOD="$@"
        PERIOD=$(echo "$PERIOD"|tr -s ' ')
        if [ -z "$PERIOD" ]; then
-        echo "No period to be forced!"
-        USCITA=$E_BAD_DAY
-        exit $USCITA
+        echo "No period to be forced!" 1>&2
+        EXIT=$E_BAD_DAY
+        exit $EXIT
        fi
        shift $#
        ;;
@@ -2328,9 +2324,9 @@ read_and_do() {
          ;;
         esac
        else
-        echo "No valid offset"
-        USCITA=$E_INVALID_OFFSET
-        exit $USCITA
+        echo "No valid offset" 1>&2
+        EXIT=$E_INVALID_OFFSET
+        exit $EXIT
        fi
        ;;
       firstaction)
@@ -2345,17 +2341,17 @@ read_and_do() {
        read ACTION
        read LINEA
        if [ "$LINEA" != "endaction" ]; then
-        echo "Actions must be only one command line!"
-        USCITA=$E_BAD_SYNACTION
-        exit $USCITA
+        echo "Actions must be only one command line!" 1>&2
+        EXIT=$E_BAD_SYNACTION
+        exit $EXIT
        fi
        if [ -z "$IGNORE_ACTION" ] && [ -z "$DISABLE_SCRIPT" ]; then
         $ACTION 2>$TMPERR
         if [ $? -ne $ACTION_EXIT ]; then
-         echo "Error while executing $1"
-         echo "stderr from $LINEA:"
+         echo "Error while executing $1" 1>&2
+         echo "stderr from $LINEA:" 1>&2
          cat $TMPERR
-         USCITA=$E_BAD_ACTION
+         EXIT=$E_BAD_ACTION
         fi
        fi
        ;;
@@ -2368,16 +2364,15 @@ read_and_do() {
        read LASTACTION
        read LINEA
        if [ "$LINEA" != "endaction" ]; then
-        echo "Actions must be only one command line!"
-        USCITA=$E_BAD_SYNACTION
-        exit $USCITA
+        echo "Actions must be only one command line!" 1>&2
+        EXIT=$E_BAD_SYNACTION
+        exit $EXIT
        fi
        ;;
       endaction)
-       echo -n "This keyword must be used after a firstaction/lastaction"
-       echo " definition!"
-       USCITA=$E_BAD_ENDACTION
-       exit $USCITA
+       echo -n "This keyword must be used after a firstaction/lastaction definition" 1>&2
+       EXIT=$E_BAD_ENDACTION
+       exit $EXIT
        ;;
       storedir)
        if [ ${2:0:1} != "/" ]; then
@@ -2393,9 +2388,9 @@ read_and_do() {
        ;;
       storefile)
        if [ -z $2 ]; then
-        echo "No store file specified!"
-        USCITA=$E_NO_STORENAME
-        exit $USCITA
+        echo "No store file specified!" 1>&2
+        EXIT=$E_NO_STORENAME
+        exit $EXIT
        fi
        shift
        local params=$@
@@ -2414,9 +2409,9 @@ read_and_do() {
        if [ $? -eq 0 ]; then
         shift
        else
-        echo "Error in logpart parameter!"
-       USCITA=$E_BAD_LOGPART
-        exit $USCITA
+        echo "Error in logpart parameter!" 1>&2
+       EXIT=$E_BAD_LOGPART
+        exit $EXIT
        fi
        debecho "read and do: logpart parameter: parsing OK"
        LOGPART=1
@@ -2445,10 +2440,9 @@ read_and_do() {
        debecho "read and do: End $SCRIPTFILE"
        ;;
       endscript)
-       echo -n "This keyword must be used after a postrotate/prerotate"
-       echo " definition!"
-       USCITA=$E_BAD_ENDSCRIPT
-       exit $USCITA
+       echo -n "This keyword must be used after a postrotate/prerotate definition!" 1>&2
+       EXIT=$E_BAD_ENDSCRIPT
+       exit $EXIT
        ;;
       touser)
        touser="$2"
@@ -2482,9 +2476,9 @@ read_and_do() {
         shift 3
         ;;
        *)
-        echo "Error in create parameter!"
-        USCITA=$E_BAD_CREATE
-        exit $USCITA
+        echo "Error in create parameter!" 1>&2
+        EXIT=$E_BAD_CREATE
+        exit $EXIT
         ;;
       esac
       debecho "read and do: create parameter: $CHMOD,$CHOWN,$CHGRP"
@@ -2508,9 +2502,9 @@ read_and_do() {
       ;;
      rotate)
       if [ -z "$2" ] || [ "$2" -lt 0 ] 2>/dev/null; then
-       echo "Bad rotate parameter"
-       USCITA=$E_BAD_ROTATE
-       exit $USCITA
+       echo "Bad rotate parameter" 1>&2
+       EXIT=$E_BAD_ROTATE
+       exit $EXIT
       fi
       ROTATE=$2
       debecho "read and do: rotate parameter: ROTATE=$ROTATE"
@@ -2524,9 +2518,9 @@ read_and_do() {
       ;;
      size)
       if [ -z "$2" ]; then
-       echo "no size parameter!"
-       USCITA=$E_BAD_SIZE
-       exit $USCITA
+       echo "no size parameter!" 1>&2
+       EXIT=$E_BAD_SIZE
+       exit $EXIT
       fi
       # Remove last char
       lensize=${#2}
@@ -2546,14 +2540,12 @@ read_and_do() {
         debecho "read and do: bad size identifier: assuming bytes"
         MULT=1
         lensize=$[ lensize + 1 ]
-        #USCITA=$E_BAD_SIZE
-        #exit $USCITA
        esac
        MAXSIZE=${2:0:$lensize-1}
        if [ $MAXSIZE -lt 0 ]; then
-        echo "bad size parameter: Must be a valid number"
-        USCITA=$E_BAD_SIZE
-        exit $USCITA
+        echo "bad size parameter: Must be a valid number" 1>&2
+        EXIT=$E_BAD_SIZE
+        exit $EXIT
        fi
        MAXSIZE=$[ MAXSIZE * MULT ]
        debecho "read and do: size parameter: MAXSIZE=$MAXSIZE"
@@ -2583,9 +2575,9 @@ read_and_do() {
        ;;
       maxdepth)
        if [ -z "$2" ] || [ "$2" -lt 0 ] >/dev/null; then
-        echo "Invalid maxdepth!"
-        USCITA=$E_BAD_MAXDEPTH
-        exit $USCITA
+        echo "Invalid maxdepth!" 1>&2
+        EXIT=$E_BAD_MAXDEPTH
+        exit $EXIT
        fi
        shift
        MAXDEPTH=$1
@@ -2634,9 +2626,9 @@ read_and_do() {
           nomail=1
           ;;
          *)
-          echo "Bad mailopt parameter!"
-          USCITA=$E_BAD_MAILOPT
-          exit $USCITA
+          echo "Bad mailopt parameter!" 1>&2
+          EXIT=$E_BAD_MAILOPT
+          exit $EXIT
           ;;
         esac
        done
@@ -2692,9 +2684,9 @@ read_and_do() {
        ;;
       *)
        echo "Bad parameter!"
-       debecho "read and do: Bad parameter: $1"
-       USCITA=$E_BAD_PARAM
-       exit $USCITA
+       debecho "read and do: Bad parameter: $1" 1>&2
+       EXIT=$E_BAD_PARAM
+       exit $EXIT
        ;;
      esac
      shift
@@ -2720,49 +2712,10 @@ read_and_do() {
     pcdpc="$packdir"
    fi
    if [ ! -z "$LOGPART" ] && [ ! -z "$CHOWN" ]; then
-    echo "create option can't be used with logpart!"
-    USCITA=$E_CANT_CREATE
-    exit $USCITA
+    echo "create option can't be used with logpart!" 1>&2
+    EXIT=$E_CANT_CREATE
+    exit $EXIT
    fi
-   # Meta-variables about time can't be used in storefile if used to rotate too
-   # In reality:
-   # day è da evitare sempre
-   # week è da evitare in monthly e weekly
-   # month è da evitare in monthly
-   # year volendo si può anche non evitare...
-   #if [ ! -z "$ROTATE" ]; then
-   #  #local check="$param_storefile"
-   #  local check=
-   #  local check_orig=
-   #  for check in "$param_storefile" "$pcdpc"; do
-   #    check_orig=$check
-   #    case "$quale" in
-   #      daily)
-   #        local META_TIME="DAY"
-   #           ;;
-   #      weekly)
-   #        local META_TIME="DAY WEEK"
-   #           ;;
-   #      monthly)
-   #        local META_TIME="DAY WEEK MONTH"
-   #           ;;
-   #      *)
-   #        local META_TIME="DAY MONTH YEAR WEEK"
-   #           ;;
-   #    esac
-   #    #local META_TIME="DAY MONTH YEAR WEEK"
-   #    for c in $META_TIME; do
-   #      check=${check//\@$c/}
-   #    done
-   #    if [ "$check" != "$check_orig" ]; then
-   #      META_TIME="@${META_TIME// / @}"
-   #      echo "$META_TIME meta-variables can't be used with rotate parameter"
-   #      echo "in $quale config file!" 
-   #      USCITA=$E_CANT_ROTATE
-   #      exit $USCITA
-   #    fi
-   #  done
-   #fi
    if [ ! -z "$COLLATE" ]; then
     if [ "$COLLATE" = "tar" ]; then
      caction="tarcollate"
@@ -2782,16 +2735,16 @@ read_and_do() {
     for check in $checkparam
     do
      if [ ! -z "$(eval echo "\$$check")" ] && [ "$(eval echo "\$$check")" -ne 0 ]; then
-      echo "$caction is not compatible with $check parameter"
-      USCITA=$E_BAD_COLLATE_PARAM
-      exit $USCITA
+      echo "$caction is not compatible with $check parameter" 1>&2
+      EXIT=$E_BAD_COLLATE_PARAM
+      exit $EXIT
      fi
     done
    fi
    if [ "$quale" = "custom" ] && [ -z "$PERIOD" ]; then
-    echo "Each logfile entry in custom config file needs period parameter!"
-    USCITA=$E_BAD_PERIOD
-    exit $USCITA
+    echo "Each logfile entry in custom config file needs period parameter!" 1>&2
+    EXIT=$E_BAD_PERIOD
+    exit $EXIT
    fi
    # End of sanity check
    debecho "read_and_do: expanding filenames $filenames"
@@ -2810,9 +2763,9 @@ read_and_do() {
      coll_period=7
      ;;
     *)
-     echo "$1 can't be used in period different than monthly or weekly"
-     USCITA=$E_BAD_COLL_PERIOD
-     exit $USCITA
+     echo "$1 can't be used in period different than monthly or weekly" 1>&2
+     EXIT=$E_BAD_COLL_PERIOD
+     exit $EXIT
      ;;
    esac
    debecho "read and do: Saving original value of purged_file variable"
@@ -2844,12 +2797,12 @@ read_and_do() {
    #update_stats $quale freed
   fi
  )
- USCITA=$?
- debecho "read and do: Exit from subshell with errorcode: $USCITA"
- if [ $USCITA -ne 0 ] && [ $USCITA -ne $BREAK_CYCLE ]; then
-  echo "There is an error in read cycle for configuration file $quale"
-  exit $USCITA
- elif [ $USCITA -eq $BREAK_CYCLE ]; then
+ EXIT=$?
+ debecho "read and do: Exit from subshell with errorcode: $EXIT"
+ if [ $EXIT -ne 0 ] && [ $EXIT -ne $BREAK_CYCLE ]; then
+  echo "There is an error in read cycle for configuration file $quale" 1>&2
+  exit $EXIT
+ elif [ $EXIT -eq $BREAK_CYCLE ]; then
   return
  fi
  #unset pcldr
@@ -2929,9 +2882,9 @@ read_log() {
 			cp -f "$storefile" $NEWtmpFILE.$extension
 			if [ ! -r "$NEWtmpFILE.$extension" ]
 			then
-				echo "Can't read temporary logfile!"
-				USCITA=$E_FILE_NOREAD
-				exit $USCITA
+				echo "Can't read temporary logfile!" 1>&2
+				EXIT=$E_FILE_NOREAD
+				exit $EXIT
 			fi
 			debecho "read_log: $unpacker $uncompress $NEWtmpFILE.$extension | $PAGER"
 			$unpacker $uncompress "$NEWtmpFILE.$extension" | $PAGER
@@ -2982,17 +2935,17 @@ read_rcopts() {
 
 	if [ -z "$1" ]
 	then
-		echo "Internal error in read_rcopts!!"
-		USCITA=$E_INTERNAL
-		exit $USCITA
+		echo "Internal error in read_rcopts!!" 1>&2
+		EXIT=$E_INTERNAL
+		exit $EXIT
 	fi
 
 	debecho "read_rcopts: Reading $1 configuration file"
 	if [ ! -f $1 ]
 	then
-		echo "Couldn't read main rc file!"
-		USCITA=$E_NO_RCFILE
-		exit $USCITA
+		echo "Couldn't read main rc file!" 1>&2
+		EXIT=$E_NO_RCFILE
+		exit $EXIT
 	fi
 
 	for i in $RC_VARS
@@ -3052,15 +3005,15 @@ read_rcopts() {
 		fi
 		if [ -z "$touser" ]
 		then
-			echo "Must specify destination address for e-mail messages"
-			USCITA=$E_NO_TOUSER
-			exit $USCITA
+			echo "Must specify destination address for e-mail messages" 1>&2
+			EXIT=$E_NO_TOUSER
+			exit $EXIT
 		fi
 		if [ -z "$mail" ]
 		then
-			echo "Must specify mailer program with parameters in mail variable"
-			USCITA=$E_NO_MAIL
-			exit $USCITA
+			echo "Must specify mailer program with parameters in mail variable" 1>&2
+			EXIT=$E_NO_MAIL
+			exit $EXIT
 		fi
 		if [ ! -z "$tabooext" ]
 		then
@@ -3166,9 +3119,9 @@ rotate_logrotate() {
 	# TODO: Make this error not so critical?
 	if [ $check -ne 0 ]
 	then
-		echo "ERROR: Time-related metavariables can't be used without *_force options"
-		USCITA=$E_LOGROTATE_NO_TIMEVAR
-		exit $USCITA
+		echo "ERROR: Time-related metavariables can't be used without *_force options" 1>&2
+		EXIT=$E_LOGROTATE_NO_TIMEVAR
+		exit $EXIT
 	fi
 
 	if [ $num_files -eq 0 ]
@@ -3191,9 +3144,9 @@ rotate_logrotate() {
 		startp=$[ startp - 1 ]
 		start_fn="${1:0:startp}"
 	else
-		echo "ERROR: Internal error in rotate_logrotate!"
-		USCITA=$E_INTERNAL
-		exit $USCITA
+		echo "ERROR: Internal error in rotate_logrotate!" 1>&2
+		EXIT=$E_INTERNAL
+		exit $EXIT
 	fi
 
 	for((i=1;i<=num_files;i++)) {
@@ -3215,7 +3168,7 @@ run_lastaction() {
 			echo "Error while executing $1"
 			echo "stderr from $LINEA:"
 			cat $TMPERR
-			USCITA=$E_BAD_ACTION
+			EXIT=$E_BAD_ACTION
 		fi
 	fi
 }
@@ -3341,23 +3294,23 @@ show_log() {
 		if [ -z "$PAGER" ]
 		then
 			echo "Can't find a pager! Use pager variable in main rc file or "
-			echo "PAGER environnement variable"
-			USCITA=$E_NO_PAGER
-			exit $USCITA
+			echo "PAGER environnement variable" 1>&2
+			EXIT=$E_NO_PAGER
+			exit $EXIT
 		fi
 		if [ ! -x "$PAGER" ]
 		then
-			echo "Can't exec pager $PAGER!"
-			USCITA=$E_NO_PAGER
-			exit $USCITA
+			echo "Can't exec pager $PAGER!" 1>&2
+			EXIT=$E_NO_PAGER
+			exit $EXIT
 		fi
 	fi
 	debecho "show_log: Using pager $PAGER"
 	if [ -z "$unpacker" ] || [ -z "$uncompress" ]
 	then
-		echo "Bad configuration: use unpacker and uncompress variables in mail rc file"
-		USCITA=$E_CANT_UNCOMPRESS
-		exit $USCITA
+		echo "Bad configuration: use unpacker and uncompress variables in mail rc file" 1>&2
+		EXIT=$E_CANT_UNCOMPRESS
+		exit $EXIT
 	fi
 	if [ $(expr "$1" : ".*\/.*") -ne 0 ]
 	then
@@ -3374,16 +3327,16 @@ show_log() {
 			read_and_do read_log "$rpath" "$1"
 			if [ "$(cat "$NEWtmpFILE.$extension" 2>/dev/null)" = "$NEWtmpFILE" ]
 			then
-				USCITA=$BREAK_CYCLE
+				EXIT=$BREAK_CYCLE
 				break
 			fi
 		fi
 	done
-	if [ $USCITA -ne $BREAK_CYCLE ]
+	if [ $EXIT -ne $BREAK_CYCLE ]
 	then
-		echo "Can't find $1"
-		USCITA=$E_FILE_NOFIND
-		exit $USCITA
+		echo "Can't find $1" 1>&2
+		EXIT=$E_FILE_NOFIND
+		exit $EXIT
 	fi
 }
 
@@ -3459,15 +3412,15 @@ update_stats() {
 
 # MAIN
 #
-trap 'rm -rf $TEMPDIR $LOCK; exit $USCITA' 0
+trap 'rm -rf $TEMPDIR $LOCK; exit $EXIT' 0
 debecho "MAIN: Filling time base variable."
 date_refer=$(date "+%m/%d/%Y %H:%M:%S")
 # Prevent multiple executions of this program at the same time:
 if test -e $LOCK
 then
-	echo "Can't run multiple instances of Rot[t]log."
-	USCITA=$E_LOCKED
-	exit $USCITA
+	echo "Can't run multiple instances of Rot[t]log." 1>&2
+	EXIT=$E_LOCKED
+	exit $EXIT
 else
 	echo "$$" >$LOCK
 	chmod 0400 $LOCK
@@ -3505,8 +3458,8 @@ then
 				rctocheck="$rctocheck main"
 				;;
 			*)
-				echo "Invalid option to checkrc: $1"
-				USCITA=$E_BAD_PARAM; exit $USCITA
+				echo "Invalid option to checkrc: $1" 1>&2
+				EXIT=$E_BAD_PARAM; exit $EXIT
 				;;
 			esac
 			shift
@@ -3583,9 +3536,9 @@ then
 			then
 				if test -z "$2"
 				then
-					echo "Must specify pager!"
-					USCITA=$E_NO_PAGER
-					exit $USCITA
+					echo "Must specify pager!" 1>&2
+					EXIT=$E_NO_PAGER
+					exit $EXIT
 				fi
 				pager="$2"
 				debecho "MAIN: Pager will be: $pager"

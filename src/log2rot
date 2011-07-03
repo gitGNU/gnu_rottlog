@@ -1,6 +1,6 @@
 #!/bin/bash
 # Copyright 2003, 2004 Stefano Falsetto <falsetto@gnu.org>
-# Copyright 2008, 2010 David Egan Evans <sinuhe@gnu.org>
+# Copyright 2008, 2010, 2011 David Egan Evans <sinuhe@gnu.org>
 #
 # This program is free software.  You can redistribute it, or modify it,
 # or both, under the terms of the GNU General Public License version 3
@@ -26,20 +26,20 @@ E_FILE_NOREAD=10
 E_SYMLINK=11
 E_CONFFILE=12
 
-trap 'rm -rf $TEMPDIR ; exit $USCITA' 0
+# Remove TEMPDIR on exit.
+trap 'rm -rf $TEMPDIR ; exit $EXIT' 0
 # Suppress C-c (SIGINT) during TEMPDIR generation
 trap '' 2
 
 debecho() {
 	if test ! -z "$DEBUG"
 	then
-		echo "$1" >&2
+		echo "$1" 1>&2
 	fi
 }
 
 expand_filenames() {
-	# Filename expansion
-	debecho "Begin filename expansion"
+	debecho "Begin filename expansion..."
 	if test $(expr index "$filenames" ",") -ne 0
 	then
 		index=0
@@ -119,22 +119,22 @@ is_readable() {
 			debecho "Missing? OK!"
 			return 1
 		else
-			echo "ERROR: Could not read $2 file!"
+			echo "ERROR: Could not read $2 file!" 1>&2
 			echo "Filename: $1"
-			USCITA=$E_FILE_NOREAD
-			exit $USCITA
+			EXIT=$E_FILE_NOREAD
+			exit $EXIT
 		fi
 	fi
 	if test -L "$1" ] && [ $follow_symlinks -eq 0
 	then
-		echo "Can't follow symbolic links!"
+		echo "Can't follow symbolic links!" 1>&2
 		echo "Filename: $1"
-		USCITA=$E_SYMLINK
-		exit $USCITA
+		EXIT=$E_SYMLINK
+		exit $EXIT
 	fi
 }
 
-# This should be a library shared with rottlog.
+# We should use GNU mktemp.
 make_tmpdir() {
         # Following code was taken from (with changes):
         # checkinstall v1.4.1 (c) Felipe Eduardo Sanchez Diaz Duran
@@ -272,7 +272,7 @@ do
 		shift
 		if test ! -f $CONFFILE
 		then
-			echo "Error: Supplied file doesn't exist!"
+			echo "Error: Supplied file doesn't exist!" 1>&2
 			exit $E_CONFFILE
 		fi
 		;;

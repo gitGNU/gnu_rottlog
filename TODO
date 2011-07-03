@@ -17,5 +17,14 @@ Create default /etc/cron.d/rottlog file for RPM spec file.
 Move syntax checking into a separate script; simplify the configuration
 files, (do we really need four plus conf files?).
 
+The error codes seem excessive. Unless there is a specific reason for
+recording the reason something exited, exit 1.
+
+Verify that log2rot still works with logrotate.conf.
+Simplify the log2rot script, and provide a concise usage summary.
+Provide a --help and --version option.
+
+Use GNU mktemp, instead of an imbedded TEMPDIR function.
+
 IDEA: Add a log analysis tool, perhaps moving the reporting features
 to it.

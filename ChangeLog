@@ -1,3 +1,19 @@
+2011.07.02 <sinuhe@gnu.org>
+
+* Rename Italian USCITA variable to EXIT, (comments and variables should
+  be in English, as recommend by the GNU coding standards)
+* Errors should redirect to STDERR.
+
+  If errors should be sent to STDOUT, they are not errors;
+  please report as a bug if this change breaks something.
+
+commit 2a22db968b2d41fbeff658361aa8a0a64dbf2ab0
+Author: D. E. Evans <sinuhe@gnu.org>
+Date:   Sat Jul 2 18:21:02 2011 -0600
+
+    Some functions have a space, some don't. This should be consistent.
+
+
 2010.07.21 <sinuhe@gnu.org>
 
 * Update SlackBuild script to run configure and make before
