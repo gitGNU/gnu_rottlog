@@ -6,6 +6,7 @@
 
   If errors should be sent to STDOUT, they are not errors;
   please report as a bug if this change breaks something.
+* Fix broken test statements in log2rot.
 
 commit 2a22db968b2d41fbeff658361aa8a0a64dbf2ab0
 Author: D. E. Evans <sinuhe@gnu.org>

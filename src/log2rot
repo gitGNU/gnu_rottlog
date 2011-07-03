@@ -114,7 +114,7 @@ is_quoted() {
 is_readable() {
 	if test ! -r "$1"
 	then
-		if test ! -z "$missingok" ] && [ "$2" != "log"
+		if test ! -z "$missingok" && test "$2" != "log"
 		then
 			debecho "Missing? OK!"
 			return 1
@@ -125,7 +125,7 @@ is_readable() {
 			exit $EXIT
 		fi
 	fi
-	if test -L "$1" ] && [ $follow_symlinks -eq 0
+	if test -L "$1" && test $follow_symlinks -eq 0
 	then
 		echo "Can't follow symbolic links!" 1>&2
 		echo "Filename: $1"
@@ -320,7 +320,7 @@ do
 	#ltrim "$l" l
 	#rtrim "$l" l
 
-	if test -z "$l" ] || [ "${l:0:1}" = "#"
+	if test -z "$l" || test "${l:0:1}" = "#"
 	then
 		continue
 	fi
