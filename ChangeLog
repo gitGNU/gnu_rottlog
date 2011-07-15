@@ -1,3 +1,8 @@
+2011.07.15 <sinuhe@gnu.org>
+
+* Update the RPM spec to use /opt by default.
+* Change version to 0.72.3.  This is not a release.
+
 2011.07.02 <sinuhe@gnu.org>
 
 * Rename Italian USCITA variable to EXIT, (comments and variables should
