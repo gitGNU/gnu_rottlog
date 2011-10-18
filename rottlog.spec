@@ -1,10 +1,11 @@
 # RPM spec file for GNU Rot[t]log
 # See the end of the file for license conditions.
 
-%define _prefix /opt/%{name}
-%define _sbindir %{_prefix}/bin
-%define _datadir %{_prefix}/share
+%define prefix /opt/%{name}
+%define _sbindir %{prefix}/sbin
+%define _datadir %{prefix}/share
 %define _docdir %{_datadir}/doc
+%define _infodir %{_datadir}/info
 %define _sysconfdir /etc/opt/%{name}
 %define packer %(finger -lp `echo "$USER"` | head -n 1 | cut -d: -f 3)
 
@@ -33,7 +34,7 @@ too large.
 %prep
 echo Building %{name}-%{version}-%{release}
 %setup -q -n %{name}-%{version}
-%configure --prefix=/opt/%{name} ROTT_ETCDIR=/etc/opt/rottlog
+%configure --prefix=/opt/%{name} ROTT_ETCDIR=/etc/opt/%{name}
 
 %build
 %{__make}
@@ -45,7 +46,7 @@ echo Building %{name}-%{version}-%{release}
 %{__install} -d %{buildroot}/opt
 %{__install} -d %{buildroot}%{_docdir}
 %{__install} -d %{buildroot}%{_infodir}
-%{__install} -d %{buildroot}%{_prefix}
+%{__install} -d %{buildroot}%{prefix}
 %{__install} -d %{buildroot}%{_sbindir}
 %{__install} -d %{buildroot}%{_sysconfdir}
 %{__install} src/log2rot %{buildroot}%{_sbindir}
@@ -54,7 +55,7 @@ echo Building %{name}-%{version}-%{release}
 	%{buildroot}%{_docdir}
 %{__install} doc/rottlog.info %{buildroot}%{_infodir}
 %{__install} rc/* %{buildroot}%{_sysconfdir}
-echo 'PATH=$PATH:%{_prefix}/bin' > %{buildroot}/etc/profile.d/rottlog.sh
+echo 'PATH=$PATH:%{prefix}/bin' > %{buildroot}/etc/profile.d/rottlog.sh
 
 %post
 for a in %{info_files}; do
@@ -83,8 +84,11 @@ fi
 /etc/profile.d/rottlog.sh
 
 %changelog
+* Mon Oct 17 2011 D. E. Evans <sinuhe@gnu.org>
+- Test spec file on openSUSE, and be more explicit with /opt macros.
+
 * Fri Jul 15 2011 D. E. Evans <sinuhe@gnu.org>
-- Release 0.72.3
+- Spec file should use /opt/ by default.
 
 * Fri Mar 28 2010 D. E. Evans <sinuhe@gnu.org>
 - Release 0.72.2

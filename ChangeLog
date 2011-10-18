@@ -1,3 +1,7 @@
+2011.10.17 <sinuhe@gnu.org>
+
+* Update /opt for real this time, and test on openSUSE.
+
 2011.07.15 <sinuhe@gnu.org>
 
 * Update the RPM spec to use /opt by default.
