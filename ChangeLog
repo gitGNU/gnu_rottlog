@@ -1,6 +1,7 @@
 2011.10.17 <sinuhe@gnu.org>
 
 * Update /opt for real this time, and test on openSUSE.
+* Fix odd artifact in ChangeLog.
 
 2011.07.15 <sinuhe@gnu.org>
 
@@ -17,12 +18,9 @@
   please report as a bug if this change breaks something.
 * Fix broken test statements in log2rot.
 
-commit 2a22db968b2d41fbeff658361aa8a0a64dbf2ab0
-Author: D. E. Evans <sinuhe@gnu.org>
-Date:   Sat Jul 2 18:21:02 2011 -0600
+2010.10.30 <sinuhe@gnu.org
 
-    Some functions have a space, some don't. This should be consistent.
-
+* Random attempts at clarity (Italian to English variables).
 
 2010.07.21 <sinuhe@gnu.org>
 
