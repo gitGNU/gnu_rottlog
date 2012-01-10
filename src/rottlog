@@ -1407,7 +1407,7 @@ lastnum() {
 # See mail_to_admin
 mail_err() {
 cat <<EOF
-Details of $quale log rotation NOT performed
+Details of $quale log rotation *not* performed
 
 File to $1           : $log
 Name of ${1}d file   : $storefile
