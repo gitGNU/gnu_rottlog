@@ -1515,83 +1515,84 @@ EOF
 
 mail_to_admin() {
 	(
-		trap 'debecho "mail_to_admin: Erasing temporary files"; rm -f $MAILMSG $ROTATE_ATTACH $ALL_ATTACH' 0
+	trap 'debecho "mail_to_admin: Erasing temporary files"
+	rm -f $MAILMSG $ROTATE_ATTACH $ALL_ATTACH' 0
 
-		if [ "$1" = "stat" ]
-		then
-			debecho "mail_to_admin: making stat mail"
-			header_mail stat	 >$MAILMSG
-			mail_stat   	>>$MAILMSG
-			signature   	>>$MAILMSG
-			cat $MAILMSG|$mail
-			debecho "mail_to_admin: Sent stats mail from $fromuser to $touser"
-			return
-		fi
-		if [ ! -z "$qdldl" ]
-		then
-			local size_a=$(ls -l "$storefile" 2>/dev/null|tr -s ' '|cut -d' ' -f5)
-		else
-			local size_a=0
-		fi
-		if [ $RET_DO_ROTATE -eq 0 ]
-		then
-			local diffbytes=$[ size_b - size_a ]
-		else
-			[ -z "$REALLY_FREED" ] && local diffbytes=0 \
+	if test "$1" = "stat"
+	then
+		debecho "mail_to_admin: making stat mail"
+		header_mail stat >$MAILMSG
+		mail_stat	>>$MAILMSG
+		signature	>>$MAILMSG
+		cat $MAILMSG|$mail
+		debecho "mail_to_admin: Sent stats mail from $fromuser to $touser"
+		return
+	fi
+	if test ! -z "$qdldl"
+	then
+		local size_a=$(ls -l "$storefile" 2>/dev/null|tr -s ' '|cut -d' ' -f5)
+	else
+		local size_a=0
+	fi
+	if test $RET_DO_ROTATE -eq 0
+	then
+		local diffbytes=$[ size_b - size_a ]
+	else
+		[ -z "$REALLY_FREED" ] && local diffbytes=0 \
 			|| diffbytes=$REALLY_FREED
-		fi
-		if [ ! -z $bytes_freed ]
-		then 
-			bytes_freed=$[  bytes_freed + diffbytes ]
+	fi
+	if test ! -z $bytes_freed
+	then 
+		bytes_freed=$[  bytes_freed + diffbytes ]
+	else
+		bytes_freed=diffbytes
+	fi
+	eval freed_$quale=$[ freed_$quale + diffbytes ]
+	update_stats $quale freed
+	if test ! -z "$ROTATE"
+	then
+		local cosa="rotate"
+		local cosing="rotating"
+	else
+		local cosa="archive"
+		local cosing="archiving"
+	fi
+	if test -s "$TMPERRMSG" ] && [ ! -z $mailopt_err
+	then
+		header_mail err 	>$MAILMSG
+		mail_err $cosa	>>$MAILMSG
+		signature		>>$MAILMSG
+		cat $MAILMSG|$mail
+		return
+	fi
+	if test ! -s "$TMPERRMSG"
+	then
+		debecho "mail_to_admin: here ROTATE_ATTACH=$ROTATE_ATTACH"
+		debecho "mail_to_admin: here mailopt_over=$mailopt_over"
+		if test -e $ROTATE_ATTACH ] && [ ! -z "$mailopt_over"
+		then
+			debecho "mail_to_admin: Making attach e-mail message (over)"
+			header_mail over		>$MAILMSG
+			mail_norm	$cosa $cosing	>>$MAILMSG
+			signature			>>$MAILMSG
+			attach_file rotate	>>$MAILMSG
+		elif test -e $ALL_ATTACH ] && [ ! -z "$mailopt_all"
+		then
+			debecho "mail_to_admin: Making attach e-mail message (all)"
+			header_mail all           >$MAILMSG
+			mail_norm $cosa $cosing   >>$MAILMSG
+			signature                 >>$MAILMSG
+			attach_file all           >>$MAILMSG
 		else
-			bytes_freed=diffbytes
+			debecho "mail_to_admin: Making standard e-mail message"
+			header_mail		>$MAILMSG
+			mail_norm	$cosa $cosing	>>$MAILMSG
+			signature			>>$MAILMSG
 		fi
-		eval freed_$quale=$[ freed_$quale + diffbytes ]
-		update_stats $quale freed
-		if [ ! -z "$ROTATE" ]
-		then
-			local cosa="rotate"
-			local cosing="rotating"
-		else
-			local cosa="archive"
-			local cosing="archiving"
-		fi
-		if [ -s "$TMPERRMSG" ] && [ ! -z $mailopt_err ]
-		then
-			header_mail err 	>$MAILMSG
-			mail_err $cosa	>>$MAILMSG
-			signature		>>$MAILMSG
-			cat $MAILMSG|$mail
-			return
-		fi
-		if [ ! -s "$TMPERRMSG" ]
-		then
-			debecho "mail_to_admin: here ROTATE_ATTACH=$ROTATE_ATTACH"
-			debecho "mail_to_admin: here mailopt_over=$mailopt_over"
-			if [ -e $ROTATE_ATTACH ] && [ ! -z "$mailopt_over" ]
-			then
-				debecho "mail_to_admin: Making attach e-mail message (over)"
-				header_mail over		>$MAILMSG
-				mail_norm	$cosa $cosing	>>$MAILMSG
-				signature			>>$MAILMSG
-				attach_file rotate	>>$MAILMSG
-			elif [ -e $ALL_ATTACH ] && [ ! -z "$mailopt_all" ]
-			then
-				debecho "mail_to_admin: Making attach e-mail message (all)"
-				header_mail all           >$MAILMSG
-				mail_norm $cosa $cosing   >>$MAILMSG
-				signature                 >>$MAILMSG
-				attach_file all           >>$MAILMSG
-			else
-				debecho "mail_to_admin: Making standard e-mail message"
-				header_mail		>$MAILMSG
-				mail_norm	$cosa $cosing	>>$MAILMSG
-				signature			>>$MAILMSG
-			fi
-			cat $MAILMSG|$mail
-			debecho "mail_to_admin: Sent mail from $fromuser to $touser"
-			return
-		fi
+		cat $MAILMSG|$mail
+		debecho "mail_to_admin: Sent mail from $fromuser to $touser"
+		return
+	fi
 	)
 }
 
