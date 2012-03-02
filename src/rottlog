@@ -3350,13 +3350,11 @@ EOF
 
 # See Main
 summarize_loginfo() {
-	# Cycle between daily, weekly, monthly, and custom
-	# quando trovo il file in uno di questi tre visualizzo le info ed esco
-	for quale in custom daily weekly monthly
+	for i in custom daily weekly monthly
 	do
-		if [ -e $MAINDIR/$quale ]
+		if test -e $MAINDIR/$i
 		then
-			debecho "summarize_loginfo: Searching in $quale conffile"
+			debecho "summarize_loginfo: Searching in $i config file"
 			read_and_do findlog "$1"
 		fi
 	done
