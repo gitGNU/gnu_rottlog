@@ -337,13 +337,13 @@ check_perms() {
 
 # See Main
 checkrc() {
-	while [ $# -ne 0 ]
+	while test $# -ne 0
 	do
-		echo "==========================================================================="
-		if [ "$1" = "main" ]
+		echo "================================================="
+		if test "$1" = "main"
 		then
 			echo "Check for main configuration file done."
-		elif [ ! -e $MAINDIR/$1 ]
+		elif test ! -e $MAINDIR/$1
 		then
 			echo "WARNING: $1 file doesn't exist!"
 		else
@@ -3350,11 +3350,11 @@ EOF
 
 # See Main
 summarize_loginfo() {
-	for i in custom daily weekly monthly
+	for quale in custom daily weekly monthly
 	do
-		if test -e $MAINDIR/$i
+		if test -e $MAINDIR/$quale
 		then
-			debecho "summarize_loginfo: Searching in $i config file"
+			debecho "summarize_loginfo: Searching in $quale config file"
 			read_and_do findlog "$1"
 		fi
 	done
@@ -3424,7 +3424,6 @@ fi
 if test $# -eq 1
 then
 	case "$1" in
-	# This should be a separate script.
 	--checkrc)
 		shift
 		if test -z "$1"
