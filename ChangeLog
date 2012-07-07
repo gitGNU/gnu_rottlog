@@ -1,3 +1,20 @@
+2012.07.07 <sinuhe@gnu.org>
+
+* Miscellaneous edits. Includes printf instead of echo -n, style adjustements,
+  redirecting echo statements to STDERR where an error exit occurs.
+
+2012.03.02 <sinuhe@gnu.org>
+
+* Improve readability of summarize_loginfo.
+* Clean up checkrc
+* Don't over indent.
+* Add sub-program call map to source.
+
+2012.01.10 <sinuhe@gnu.org>
+
+* Use asterisks for emphasis (see RFC 1855), not capitals.
+* Update banner copyright.
+
 2011.10.17 <sinuhe@gnu.org>
 
 * Update /opt for real this time, and test on openSUSE.
