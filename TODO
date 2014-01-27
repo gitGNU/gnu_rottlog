@@ -1,6 +1,9 @@
 TODO LIST:
 =========
 
+Test installation on multile GNU/Linux distributions, with/ and without/pre-
+existing logrotate
+
 If default rc specifies gzip, or bzip2, rottlog doesn't assume the
 extension.  bzip2 and gzip require the extension to function.  Currently,
 METAVARIABLES must specify the extension.  Rottlog should support the
